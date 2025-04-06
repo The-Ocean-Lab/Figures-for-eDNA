@@ -1,0 +1,146 @@
+---
+title: "Relative Abundance workflow"
+author: "JS Pinelo"
+date: "2025-04-05"
+output: html_document
+---
+##clean and merge data
+We are going to clean and merge the data to make it usable for the graphs and remove any data/rows we dont need We are going to start with the file mothur spits out called "final_opti_mcc.shared" and i loaded it in using whitespace as the delimiter
+
+```{r}
+library(tidyverse)
+phylatax <- final_opti_mcc %>%
+  select(-label, -numOtus)%>%
+  rename(sample_id = Group)%>%
+  pivot_longer(-sample_id, names_to = "otu", values_to = "counts") %>%
+  filter(sample_id != "ALGAE") %>% # Taking out algae
+  rename_all(tolower)%>%
+  mutate(sample_id = recode(sample_id, 
+                            "JP_101124_16" = "F24OPR1",
+                            "JP_101124_17" = "F24OPR1_2",
+                            "JP_101124_18" = "F24OPR1_3",
+                            "JP_101124_13"="F24ONR1",
+                            "JP_101124_14"="F24ONR1_2",
+                            "JP_101124_15"="F24ONR1_3",
+                            "JP" = "F24OC1",
+                            "JP_101124" = "F24OC1_2",
+                            "JP_101124_12" = "F24OC1_3"))#renaming columns with our new naming scheme
+```
+#filter by site
+Sometimes we just want to run certain sites (eg. NR1),we can filter the data for individual sites and rename those chunks for later use
+
+```{r}
+nr1phylatax <- filter(phylatax, sample_id %in% c("F24NNR1",
+                                                 "F24NNR1_2S",
+                                                 "F24NNR1_3S",
+                                                 "F24ONR1",
+                                                 "F24ONR1_2",
+                                                 "F24ONR1_3"))
+c1phylatax <- filter(phylatax, sample_id %in% c("F24NC1", "F24NC1_2S", "F24NC1_3S",
+                                                "JP" = "F24OC1",
+                                                "JP_101124" = "F24OC1_2",
+                                                "JP_101124_12" = "F24OC1_3"))
+pr1phylatax <- filter(phylatax, sample_id %in% c("F24OPR1", "F24OPR1_2", "F24OPR1_3"))
+
+```
+#Load taxonomy
+Now that the dataset with OTUs is clean and organized by site we can load in taxonomy, I used "final.opti_mcc.0.03.cons.taxonomy"
+```{r}
+taxonomy <- final_opti_mcc_0_03_cons%>%
+  select("OTU","Taxonomy")%>%
+  rename_all(tolower)%>%
+  mutate(taxonomy = str_replace_all(taxonomy,"\\(\\d+\\)",""),
+         taxonomy = str_replace(taxonomy, ";$", "")) 
+#stringr remove parenthesis (100) with number inside next to taxons 
+#"\\(\\d+\\)" is a regular expression argument and basically is (d+) which means a number greater than 1 and 
+#replaced it with nothing which is why its just quotes
+taxonomy<- separate(taxonomy,
+                    col="taxonomy",
+                    into = c("kingdom", "phylum", "class", "order", "family", "genus"), 
+                    sep = ";")
+```
+#Join taxonomy and calculate relative abundance
+now that we cleaned up the taxonomy file we can join the taxonomy file to whichever site we want and calculate the relative abundances
+
+```{r}
+relativeabund<- inner_join(nr1phylatax,taxonomy)%>%
+  mutate(rel_abund=counts/sum(counts))%>%
+  select(-counts)%>%
+  pivot_longer(cols=c("kingdom", "phylum", "class", "order", "family", "genus","otu"), 
+               names_to = "level",
+               values_to = "taxon")
+```
+#making a new file just for phyla
+```{r}
+fallnr1phylaabundance_data <- relativeabund %>%
+  filter(level == "phylum")
+```
+Now we are going to take a look at the data to see what our relative abundances are, in two ways, sum and average.(this doesn't make a figure or any new data, its just for us to see)
+#Sum of Relative Abundance (First code) tells you how much of each taxon
+is present in each sample, which is useful for understanding the overall 
+proportion of a taxon in each sample, but it doesn't account for variation across samples.
+```{r}
+fallnr1phylaabundance_data %>%
+  group_by(sample_id, taxon) %>% 
+  summarize(rel_abund=sum(rel_abund),.groups = "drop")%>%
+  arrange(desc(rel_abund))
+```
+#mean relative abundance
+Why:gives you the average relative abundance of each taxon, which helps to understand the dominance of taxa in your data, particularly when comparing across samples. Sorting by mean_rel_abund allows you to identify which taxa tend to be more abundant across your dataset.
+```{r}
+averagefallnr1phyla <-fallnr1phylaabundance_data %>%
+  group_by(sample_id, taxon) %>%
+  summarize(mean_rel_abund = mean(rel_abund),.groups = "drop")%>%
+  arrange(desc(mean_rel_abund))
+```
+#percentage of each phyla present
+Another way we can understand our abundances is to know the percentage of the phyla that makes up the sample
+
+```{r}
+percentagenr1 <- fallnr1phylaabundance_data %>%
+  filter(level == "phylum") %>%  # Filter for phylum-level taxa
+  group_by(sample_id, taxon) %>%  # Group by sample and taxon (phylum)
+  summarize(rel_abund = sum(rel_abund), .groups = "drop") %>%  # Sum relative abundance for each taxon in each sample
+  group_by(sample_id) %>%  # Group by sample to get the total for each sample
+  mutate(perc_abund = rel_abund / sum(rel_abund) * 100) %>%  # Calculate percentage for each phylum in each sample
+  arrange(sample_id, desc(perc_abund))  # Optionally arrange by sample_id and percentage
+
+view(Falltop10nr1)
+```
+#Graphing Average abundance
+I am graphing the average abundance cuz its prettier and a little more complicated, this code can be editted down or expanded
+```{r}
+averagefallnr1phylagraph <- averagefallnr1phyla %>%# Scale the mean relative abundance to ensure it sums to 100% for each sample
+  group_by(sample_id) %>%
+  mutate(rel_abund_scaled = mean_rel_abund / sum(mean_rel_abund)) %>%
+  ggplot(aes(x = sample_id, y = rel_abund_scaled, fill = taxon)) +
+  geom_col() + 
+  scale_fill_manual(values = phylum_colors)+
+  scale_y_continuous(name = "Relative abundance", 
+                     labels = scales::percent, 
+                     limits = c(0, 1)) + # Set y-axis limits to 0-1 (100%)
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))+# Optional: Rotate x-axis labels for readability
+  theme_bw() #gets rid of grey background but keeps gridlines
+
+print(averagefallnr1phylagraph)
+ggsave("AverageFallnr1PhylaAbundance.png", plot = averagefallnr1phylagraph, 
+       width = 12, height = 8, dpi = 300)  
+```
+#Filtering out phyla
+Just for fun, lets filter out bacteria_unclassified and this can be applied to a other phyla. because we edited it within the data file, when we run the graph again it wont have bacteria unclassified
+```{r}
+fallnr1phylaabundance_data <- fallnr1phylaabundance_data %>%
+  group_by(sample_id, taxon) %>% 
+  filter(taxon != "Bacteria_unclassified")%>%
+  summarize(rel_abund=sum(rel_abund),.groups = "drop")%>%
+  arrange(desc(rel_abund))
+```
+
+
+
+
+
+
+
+
+ 
