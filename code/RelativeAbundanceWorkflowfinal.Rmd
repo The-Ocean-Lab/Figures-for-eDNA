@@ -46,10 +46,10 @@ pr1phylatax <- filter(phylatax, sample_id %in% c("F24OPR1", "F24OPR1_2", "F24OPR
 #Load taxonomy
 Now that the dataset with OTUs is clean and organized by site we can load in taxonomy, I used "final.opti_mcc.0.03.cons.taxonomy"
 ```{r}
-taxonomy <- final_opti_mcc_0_03_cons%>%
+taxfile <- final_opti_mcc_0_03_cons%>%
   select("OTU","Taxonomy")%>%
   rename_all(tolower)%>%
-  mutate(taxonomy = str_replace_all(taxonomy,"\\(\\d+\\)",""),
+  mutate(taxfile,taxonomy = str_replace_all(taxonomy,"\\(\\d+\\)",""),
          taxonomy = str_replace(taxonomy, ";$", "")) 
 #stringr remove parenthesis (100) with number inside next to taxons 
 #"\\(\\d+\\)" is a regular expression argument and basically is (d+) which means a number greater than 1 and 
