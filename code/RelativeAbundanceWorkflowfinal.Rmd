@@ -12,7 +12,7 @@ library(tidyverse)
 phylatax <- final_opti_mcc %>%
   select(-label, -numOtus)%>%
   rename(sample_id = Group)%>%
-  pivot_longer(-sample_id, names_to = "otu", values_to = "counts") %>%
+  pivot_longer(phylatax,-sample_id, names_to = "otu", values_to = "counts") %>%
   filter(sample_id != "ALGAE") %>% # Taking out algae
   rename_all(tolower)%>%
   mutate(sample_id = recode(sample_id, 
