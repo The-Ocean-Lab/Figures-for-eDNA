@@ -1,0 +1,20 @@
+#### activate qiime2 ####
+conda activate
+conda activate qiime2-amplicon-2024.10               # open qiime2 environment (this protocol is based on version 2024.10)
+
+#### set and go into working directory #### 
+workdir="/Users/drocean/Desktop/18S"                 # use absolute pathname of folder
+cd "$workdir"                                        # go into working directory
+ls -d "$PWD/raw_data/"                               # create a raw_data folder
+cd raw_data                                          # go into raw_data folder
+rm -f ../ids.txt                                     # removes old id.text file if there is one
+
+for f in *.fastq.gz; do
+  name=$(echo "$f" | sed -E 's/(.*)_[Rr][12].fastq.gz/\1/')
+  echo "$name" >> ../ids.txt
+done                                                 # extracts the name of the file before the underscore and a R or r, 1 or 2, and .fastq.gz change to .fastq if files are gunzipped
+                                                     # puts these extracted names in a file called ids.txt
+
+cd ..                                                # goes out of raw_data and into working directory 
+ls -d "$PWD/raw_data/"*.fastq.gz > paths.txt
+
