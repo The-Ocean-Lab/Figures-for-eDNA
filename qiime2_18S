@@ -1,6 +1,10 @@
+Based on Wright Labs workshop 05/12/2025 and 05/13/2025
+
 #### activate qiime2 ####
 conda activate
 conda activate qiime2-amplicon-2024.10               # open qiime2 environment (this protocol is based on version 2024.10)
+
+1.1 Create a Mapping File
 
 #### set and go into working directory #### 
 workdir="/Users/drocean/Desktop/18S"                 # use absolute pathname of folder
@@ -16,5 +20,181 @@ done                                                 # extracts the name of the 
                                                      # puts these extracted names in a file called ids.txt
 
 cd ..                                                # goes out of raw_data and into working directory 
-ls -d "$PWD/raw_data/"*.fastq.gz > paths.txt
+ls -d "$PWD/raw_data/"*.fastq.gz > paths.txt         # creates a file with all the path names for fasta.gz files
+paste -d "," ids.txt paths.txt > combined.csv        # combines the id.txt and path.txt files 
+awk -F "," '$2 ~ /_R1/ {print $1 "," $2 ",forward"}' combined.csv > forward.csv           
+                                                     # adds and labels the forward reads to the combined file
+awk -F "," '$2 ~ /_R2/ {print $1 "," $2 ",reverse"}' combined.csv > reverse.csv
+                                                     # adds and labels the reverse reads to the combined file
+echo "sample-id,absolute-filepath,direction" > header.csv 
+                                                     # creates a csv with sampleid, filepath and direction (just columns)
+cat header.csv forward.csv reverse.csv > mapping.csv # add the data from each file to the appropiate column
+mkdir -p import_intermediate_files                   # makes a file in working directory called intermediate files
+mv paths.txt combined.csv forward.csv reverse.csv header.csv import_intermediate_files 
+                                                     # puts the listed files into the intermediate files folder
+
+1.2 Importing Raw Reads
+
+workdir="/Users/drocean/Desktop/18S"                 
+cd "$workdir"                                        # stay in same working directory, use code if need to reset
+                                                     # open all files with gunzip before next line
+
+echo "sample-id,absolute-filepath,direction" > mapping.csv
+for f in /Users/drocean/Desktop/18S_Winter_2025/raw_data/*_R1_001.fastq; do
+  r2=${f/_R1_/_R2_}
+  if [[ -f "$r2" ]]; then
+    sample=$(basename "$f" | sed -E 's/_L001_R1_001.fastq//')
+    echo "$sample,$f,forward" >> mapping.csv
+    echo "$sample,$r2,reverse" >> mapping.csv
+  else
+    echo "Missing reverse read for $f"
+  fi
+done
+
+                                                    # correctly formats the manifest file, there should be a identical sample id name with F and R
+
+qiime tools import \
+  --type 'SampleData[PairedEndSequencesWithQuality]' \
+  --input-path mapping.csv \
+  --output-path paired-end-demux.qza \
+  --input-format PairedEndFastqManifestPhred33
+
+                                                    # creates a paired_end_demux.qza file which qiime can read and access
+
+2. Quality Check
+
+qiime demux summarize \
+  --i-data paired-end-demux.qza \
+  --o-visualization VIEWABLE_paired-end-demux.qzv
+
+                                                    # access https://view.qiime2.org/ and drag file
+                                                    # creates a file has sample id, # of forward seqs, & and # of reverse seqs
+qiime vsearch fastq-stats \
+  --i-sequences paired-end-demux.qza \
+  --p-threads 1 \
+  --o-visualization VIEWABLE_ee_paired-end-demux.qzv
+
+                                                    # creates a file quality plot for the forward and reverse reads
+                                                    # use this file to determine where to trim base pairs
+
+3. Denoise Data
+
+qiime dada2 denoise-paired \
+  --i-demultiplexed-seqs paired-end-demux.qza \
+  --p-trim-left-f 5 \           
+  --p-trim-left-r 5 \
+  --p-trunc-len-f 145 \
+  --p-trunc-len-r 145 \
+  --o-table table.qza \
+  --o-representative-sequences rep-seqs.qza \
+  --o-denoising-stats denoising-stats.qza \
+  --p-n-threads 4 \
+  --p-max-ee-f 2 \
+  --p-max-ee-r 2
+
+                                                    # only inputs that should be changed are p-trunc-len-f/r
+                                                    # p-trim left cuts off the first couple of bases
+                                                    # p-max-ee-f/r determines how much error is allowed
+
+qiime metadata tabulate \
+  --m-input-file denoising-stats.qza \
+  --o-visualization VIEWABLE_denoising-stats.qzv   # makes the denoising stats viewable showing how many were filtered, denoised, merged, and non-chimeric
+
+qiime feature-table summarize \
+  --i-table table.qza \
+  --o-visualization VIEWABLE_unfiltered_table.qzv   # XXXX
+
+qiime feature-table tabulate-seqs \
+  --i-data rep-seqs.qza \
+  --o-visualization VIEWABLE_rep-seqs.qzv           # XXXX
+
+4.0 Training a Classifier
+
+# based on qiime2 forum instructions
+
+qiime tools import \
+  --type 'FeatureData[Sequence]' \
+  --input-path /Users/drocean/Desktop/16S_18S_silva/SILVA_138.2_SSURef_NR99_tax_silva_trunc.fasta \
+  --output-path silva-138-ssu-ref-seqs-rna.qza
+                                                   # takes a database in fasta file form and turns it into a .qza so qiime2 can read it
+ workdir="/Users/drocean/Desktop/classifer"        # change the working directory to a new folder called classifier
+cd $workdir
+conda install -c bioconda -c conda-forge q2-rescript  
+                                                   # install tools to help change the database from rna.qza to dna.qza
+qiime rescript reverse-transcribe \
+  --i-rna-sequences silva-138-ssu-ref-seqs-rna.qza \
+  --o-dna-sequences silva-138-ssu-ref-seqs-dna.qza
+                                                   # rna.qza to dna.qza
+qiime rescript get-silva-data \
+  --p-version 138 \
+  --p-target SSURef_NR99 \
+  --p-include-species-labels \
+  --o-silva-sequences silva-138-ssu-nr99-seqs.qza \
+  --o-silva-taxonomy silva-138-ssu-nr99-tax.qza
+                                                  # uses database to create a .qza file with the taxonomy seq and the taxonomy name
+qiime rescript dereplicate \
+  --i-sequences silva-138-ssu-ref-seqs-dna.qza \
+  --i-taxa silva-138-ssu-nr99-tax.qza \
+  --p-mode 'uniq' \
+  --o-dereplicated-sequences silva-138.0-ssu-nr99-seqs-derep-uniq.qza \
+  --o-dereplicated-taxa silva-138.0-ssu-nr99-tax-derep-uniq.qza
+                                                 # gets rid of duplicate seqs
+qiime feature-classifier extract-reads \
+    --i-sequences silva-138.0-ssu-nr99-seqs-derep-uniq.qza \
+    --p-f-primer GTACACACCGCCCGTC \
+    --p-r-primer TGATCCTTCTGCAGGTTCACCTAC \
+    --p-n-jobs 8 \
+    --p-read-orientation 'forward' \
+    --o-reads silva-132.0-ssu-nr99-seqs-F04-R22.qza
+                                                # XXXX
+qiime feature-classifier fit-classifier-naive-bayes \
+  --i-reference-reads silva-132.0-ssu-nr99-seqs-F04-R22.qza \
+  --i-reference-taxonomy silva-138.0-ssu-nr99-tax-derep-uniq.qza \
+  --o-classifier silva-138-F04-R22-classifier.qza
+                                                # training the classifer
+cd /Users/drocean/Desktop/18S                   # reset for 18S folder from before
+
+
+4.1 Assigning Taxonomy
+
+qiime feature-classifier classify-sklearn \
+  --i-classifier /Users/drocean/Desktop/classifer/silva-138-F04-R22-classifier.qza \
+  --i-reads rep-seqs.qza \
+  --p-n-jobs 4 \
+  --o-classification taxonomy.qza
+                                               # use the absolute pathname of the trained database and assigns taxonomy to ASVs
+
+qiime metadata tabulate \
+  --m-input-file taxonomy.qza \
+  --o-visualization VIEWABLE_taxonomy.qzv      # makes viewable taxonomy file
+
+qiime taxa barplot \
+  --i-table table.qza \
+  --i-taxonomy taxonomy.qza \
+  --o-visualization VIEWABLE_taxa-bar-plots.qzv 
+                                               # veiwable bar plot with relative frequencies of kingdoms
+
+
+Relative Abundance
+
+qiime taxa collapse \
+  --i-table /Users/drocean/Desktop/18S_Winter_2025/ancom/filtered_feature-table.qza \
+  --i-taxonomy taxonomy.qza \
+  --p-level 2 \
+  --o-collapsed-table phyla-table.qza 
+                                             # phyla can be changed to order,family,genus etc
+qiime feature-table relative-frequency \
+--i-table phyla-table.qza \
+--o-relative-frequency-table rel-phyla-table.qza
+                                             # creates the abundance percents
+qiime tools export \
+  --input-path rel-phyla-table.qza \
+  --output-path rel-table                    # creates a folder called rel-table and puts the folder in there
+
+cd rel-table                                 # goes into rel-table folder
+biom convert -i freq-table.biom -o rel-phyla-table.tsv --to-tsv
+                                             # converts into a .tsv file 
+
+
+
 
