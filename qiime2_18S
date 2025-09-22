@@ -1,5 +1,11 @@
 Based on Wright Labs workshop 05/12/2025 and 05/13/2025
 
+1.0 Set Up
+
+# creating a working directory folder
+# create a folder called raw_data
+# move all fastq.gz / .fastq files into the raw_data folder
+
 #### activate qiime2 ####
 conda activate
 conda activate qiime2-amplicon-2024.10               # open qiime2 environment (this protocol is based on version 2024.10)
