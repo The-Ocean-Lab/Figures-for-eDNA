@@ -46,7 +46,7 @@ cd "$workdir"                                        # stay in same working dire
                                                      # open all files with gunzip before next line
 
 echo "sample-id,absolute-filepath,direction" > mapping.csv
-for f in /Users/drocean/Desktop/18S/raw_data/*_R1_001.fastq; do
+for f in /Users/drocean/Desktop/18S/raw_data/*_R1_001.fastq.gz; do
   r2=${f/_R1_/_R2_}
   if [[ -f "$r2" ]]; then
     sample=$(basename "$f" | sed -E 's/_L001_R1_001.fastq//')
@@ -57,7 +57,7 @@ for f in /Users/drocean/Desktop/18S/raw_data/*_R1_001.fastq; do
   fi
 done
 
-                                                    # correctly formats the manifest file, there should be a identical sample id name with F and R, change the working directory
+                                                    # correctly formats the manifest file, there should be a identical sample id name with F and R, change the working directory, check to see if files are fastq.gz or fastq
 
 qiime tools import \
   --type 'SampleData[PairedEndSequencesWithQuality]' \
