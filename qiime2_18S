@@ -57,7 +57,7 @@ for f in /Users/drocean/Desktop/18S/raw_data/*_R1_001.fastq.gz; do
   fi
 done
 
-                                                    # correctly formats the manifest file, there should be a identical sample id name with F and R, change the working directory, check to see if files are fastq.gz or fastq
+                                                    # correctly formats the manifest file, there should be a identical sample id name with F and R, change the working directory, check to see if files are fastq.gz or fastq, check if R1_001 or R1
 
 qiime tools import \
   --type 'SampleData[PairedEndSequencesWithQuality]' \
