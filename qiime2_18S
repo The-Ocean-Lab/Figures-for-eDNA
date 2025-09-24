@@ -133,6 +133,18 @@ qiime taxa barplot \
   --o-visualization VIEWABLE_taxa-bar-plots.qzv 
                                                # veiwable bar plot with relative frequencies of kingdoms
 
+Downstream Organization
+
+mkdir alpha_div
+mkdir beta_div
+mkdir R
+mkdir ancom                                    # makes folder with all these titles
+
+
+
+
+
+
 
 Relative Abundance
 
