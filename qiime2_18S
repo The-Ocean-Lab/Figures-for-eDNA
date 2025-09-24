@@ -108,11 +108,11 @@ qiime metadata tabulate \
 
 qiime feature-table summarize \
   --i-table table.qza \
-  --o-visualization VIEWABLE_unfiltered_table.qzv   # XXXX
+  --o-visualization VIEWABLE_unfiltered_table.qzv   # shows the distrubution unique sequences and frequency in each sample
 
 qiime feature-table tabulate-seqs \
   --i-data rep-seqs.qza \
-  --o-visualization VIEWABLE_rep-seqs.qzv           # XXXX
+  --o-visualization VIEWABLE_rep-seqs.qzv           # has each unique sequence and the corresponding sequence, gives a table about average length of these seqs
 
 4.1 Assigning Taxonomy
 
