@@ -7,7 +7,7 @@ qiime tools import \
   --input-path /Users/drocean/Desktop/16S_18S_silva/SILVA_138.2_SSURef_NR99_tax_silva_trunc.fasta \
   --output-path silva-138-ssu-ref-seqs-rna.qza
                                                    # takes a database in fasta file form and turns it into a .qza so qiime2 can read it
- workdir="/Users/drocean/Desktop/classifer"        # change the working directory to a new folder called classifier
+workdir="/Users/drocean/Desktop/classifer"        # change the working directory to a new folder called classifier
 cd $workdir
 conda install -c bioconda -c conda-forge q2-rescript  
                                                    # install tools to help change the database from rna.qza to dna.qza
