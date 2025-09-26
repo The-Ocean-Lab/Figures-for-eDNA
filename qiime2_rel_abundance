@@ -1,1 +1,27 @@
-XXX
+#### Relative Abundance Workflow from QIIME2 ####
+
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(forcats)
+
+1.0 Import Data
+
+# delete the empty column and paste special transpose in excel (should be a site column then OTU columns)
+
+View(df)
+
+df <- df %>%
+  mutate(across(.cols = -site, .fns = as.numeric)) # turn every column numeric except site
+str(df) # should output OTU columns "as numeric"
+
+2.0 Clean Data
+
+df <- df %>%
+  mutate(phylum = str_replace(OTU, ";__",""),
+         phylum = str_replace(OTU, "_",""),
+         phylum = str_replace(OTU, "Metazoa;",""),
+         phylum = str_replace(OTU, "\\.","")) # makes sure it does "." not ".[character]"
+View(df)
+
