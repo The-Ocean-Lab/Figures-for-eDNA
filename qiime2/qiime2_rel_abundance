@@ -28,25 +28,14 @@ View(df) # looks through all the column names and replaces with new naming strin
 df <- pivot_longer(
   df,
   cols = -site,
-  names_to = "phylum",
-  values_to = "rel_ab"
-)
-
-View(df)
-
-df <- pivot_longer(
-  df,
-  cols = -site,
-  names_to = "phylum",
+  names_to = "TAXON",
   values_to = "rel_ab"
 )
 
 df <- df %>%
-  mutate(phylum = str_replace(phylum, ";__",""),
-         phylum = str_replace(phylum, "_",""),
-         phylum = str_replace(phylum, "Metazoa;",""),
-         phylum = str_replace(phylum, "\\;__",""),
-         phylum = str_replace(phylum, "\\.","")) 
+  mutate(TAXON = str_replace(TAXON, ";__",""),
+         TAXON = str_replace(TAXON, "_",""),
+         TAXON = str_replace(TAXON, "\\;__","")
 View(df) # pivots longer so each cell becomes a datapoint, needs to be in this format for ggplot
 
 df <- df %>%
@@ -67,30 +56,30 @@ df <- df %>%
 
 df$month <- factor(df$month, levels= c("September","November"))
 
-graph <- ggplot(df, aes(x = site, y = rel_ab, fill = phylum)) +
+graph <- ggplot(df, aes(x = site, y = rel_ab, fill = TAXON)) +
   geom_bar(stat = "identity", position = "fill") +
-  facet_wrap(~ month, scales = "free_x") +
+  facet_wrap(~ TEMPORAL, scales = "free_x") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  labs(x = "Site", y = "Relative Abundance", fill = "Phylum") 
+  labs(x = "Site", y = "Relative Abundance", fill = "TAXON") 
 
 graph # just standard R graph abundance
 
-colors <- c(
+#colors <- c(
   "darkseagreen", "darkcyan", "azure4", "darksalmon","olivedrab", "orange", "blue", "tomato2", "grey47",
   "darkslateblue", "cyan3", "magenta", "palegoldenrod", "dodgerblue", "firebrick", "darkgoldenrod4",
   "lightblue", "darkgrey", "mediumpurple1", "darkgreen", "tan4","purple4", "deeppink4", "darkblue", "yellowgreen")
 # pick which colors you want in the specific order
 
-phylum_colors <- c(
+colors <- c(
   "firebrick", "darksalmon", "tomato2", "orange","darkgoldenrod4", "darkseagreen", "olivedrab", "darkgreen", "darkcyan","dodgerblue", "darkblue", "mediumpurple1","darkslateblue", "purple4","deeppink4", "grey47")
 # 16 colors making a rainbow graph
 
-graph <- ggplot(df, aes(x = site, y = rel_ab, fill = phylum)) +
+graph <- ggplot(df, aes(x = site, y = rel_ab, fill = TAXON)) +
   geom_bar(stat = "identity", position = "fill") +
-  facet_wrap(~ month, scales = "free_x") +
+  facet_wrap(~ TEMPORAL, scales = "free_x") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  labs(x = "Site", y = "Relative Abundance", fill = "Phylum") +
-  scale_fill_manual(values = phylum_colors) # set to the color scheme
+  labs(x = "Site", y = "Relative Abundance", fill = "TAXON") +
+  scale_fill_manual(values = colors) # set to the color scheme
 
 graph + theme(legend.text = element_text(size = 8),  
               legend.title = element_text(size = 8)) # make the text bigger
@@ -100,14 +89,14 @@ top10_df <-  tbl_df(df) %>%
   arrange(rel_ab, .by_group = TRUE) %>%
   top_n(10, rel_ab)
 
-top10_df$phylum <- fct_relevel(top10_df$phylum, "Unassigned", after = Inf)
+top10_df$TAXON <- fct_relevel(top10_df$TAXON, "Unassigned", after = Inf)
 
-top10 <-ggplot(top10_df, aes(x = site, y = rel_ab, fill = phylum)) +
+top10 <-ggplot(top10_df, aes(x = site, y = rel_ab, fill = TAXON)) +
   geom_bar(stat = "identity", position = "fill") +
-  facet_wrap(~ month, scales = "free_x") +
+  facet_wrap(~ TEMPORAL, scales = "free_x") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  labs(x = "Site", y = "Relative Abundance", fill = "Phylum") +
-  scale_fill_manual(values = phylum_colors) 
+  labs(x = "Site", y = "Relative Abundance", fill = "TAXON") +
+  scale_fill_manual(values = colors) 
 
 top10 + theme(legend.text = element_text(size = 8),  
               legend.title = element_text(size = 8)) 
