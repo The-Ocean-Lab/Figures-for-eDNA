@@ -1,4 +1,4 @@
-#### Relative Abundance Workflow from QIIME2 ####
+#### Relative Abundance Workflow from QIIME2 in R Studio ####
 
 library(tidyverse)
 library(tidyr)
@@ -19,9 +19,97 @@ str(df) # should output OTU columns "as numeric"
 2.0 Clean Data
 
 df <- df %>%
-  mutate(phylum = str_replace(OTU, ";__",""),
-         phylum = str_replace(OTU, "_",""),
-         phylum = str_replace(OTU, "Metazoa;",""),
-         phylum = str_replace(OTU, "\\.","")) # makes sure it does "." not ".[character]"
+  rename_with(~ str_replace_all(.x,";__","")) %>%
+  rename_with(~ str_replace_all(.x,"Metazoan;","")) %>%
+  rename_with(~ str_replace_all(.x,"_","")) %>%
+  rename_with(~ str_replace_all(.x,"\\.","")) 
+View(df) # looks through all the column names and replaces with new naming string
+
+df <- pivot_longer(
+  df,
+  cols = -site,
+  names_to = "phylum",
+  values_to = "rel_ab"
+)
+
 View(df)
 
+df <- pivot_longer(
+  df,
+  cols = -site,
+  names_to = "phylum",
+  values_to = "rel_ab"
+)
+
+df <- df %>%
+  mutate(phylum = str_replace(phylum, ";__",""),
+         phylum = str_replace(phylum, "_",""),
+         phylum = str_replace(phylum, "Metazoa;",""),
+         phylum = str_replace(phylum, "\\;__",""),
+         phylum = str_replace(phylum, "\\.","")) 
+View(df) # pivots longer so each cell becomes a datapoint, needs to be in this format for ggplot
+
+df <- df %>%
+  mutate(type = case_when(
+    site == "ZM_XXXXXX_C1_1" ~ "MONTH",
+    site == "ZM_XXXXXX_NR1_1" ~ "MONTH",
+    site == "ZM_XXXXXX_PR1_1" ~ "MONTH",
+    TRUE ~ "MONTH" # Default value for all other names
+  ))
+
+df <- df %>%
+  mutate(site = str_replace(site, "ZM_101124_", ""),
+         site = str_replace(site, "ZM_112024_",""))
+View(df) # should be correct site name and extra column with the month or season
+
+df <- df %>%
+  rename(month=type) # changes the extra column name to month (or season)
+
+df$month <- factor(df$month, levels= c("September","November"))
+
+graph <- ggplot(df, aes(x = site, y = rel_ab, fill = phylum)) +
+  geom_bar(stat = "identity", position = "fill") +
+  facet_wrap(~ month, scales = "free_x") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Site", y = "Relative Abundance", fill = "Phylum") 
+
+graph # just standard R graph abundance
+
+colors <- c(
+  "darkseagreen", "darkcyan", "azure4", "darksalmon","olivedrab", "orange", "blue", "tomato2", "grey47",
+  "darkslateblue", "cyan3", "magenta", "palegoldenrod", "dodgerblue", "firebrick", "darkgoldenrod4",
+  "lightblue", "darkgrey", "mediumpurple1", "darkgreen", "tan4","purple4", "deeppink4", "darkblue", "yellowgreen")
+# pick which colors you want in the specific order
+
+phylum_colors <- c(
+  "firebrick", "darksalmon", "tomato2", "orange","darkgoldenrod4", "darkseagreen", "olivedrab", "darkgreen", "darkcyan","dodgerblue", "darkblue", "mediumpurple1","darkslateblue", "purple4","deeppink4", "grey47")
+# 16 colors making a rainbow graph
+
+graph <- ggplot(df, aes(x = site, y = rel_ab, fill = phylum)) +
+  geom_bar(stat = "identity", position = "fill") +
+  facet_wrap(~ month, scales = "free_x") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Site", y = "Relative Abundance", fill = "Phylum") +
+  scale_fill_manual(values = phylum_colors) # set to the color scheme
+
+graph + theme(legend.text = element_text(size = 8),  
+              legend.title = element_text(size = 8)) # make the text bigger
+
+top10_df <-  tbl_df(df) %>%
+  group_by(site) %>%
+  arrange(rel_ab, .by_group = TRUE) %>%
+  top_n(10, rel_ab)
+
+top10_df$phylum <- fct_relevel(top10_df$phylum, "Unassigned", after = Inf)
+
+top10 <-ggplot(top10_df, aes(x = site, y = rel_ab, fill = phylum)) +
+  geom_bar(stat = "identity", position = "fill") +
+  facet_wrap(~ month, scales = "free_x") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Site", y = "Relative Abundance", fill = "Phylum") +
+  scale_fill_manual(values = phylum_colors) 
+
+top10 + theme(legend.text = element_text(size = 8),  
+              legend.title = element_text(size = 8)) 
+
+write.csv(df, file="/Users/zurimurph/Desktop/Ocean_Lab/code/R_Outputs/df.csv", row.names=FALSE) #ouputs df as a csv file 
