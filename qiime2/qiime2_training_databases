@@ -42,5 +42,41 @@ qiime feature-classifier fit-classifier-naive-bayes \
   --i-reference-taxonomy silva-138.0-ssu-nr99-tax-derep-uniq.qza \
   --o-classifier silva-138-F04-R22-classifier.qza
                                                 # training the classifer
-cd /Users/drocean/Desktop/18S                   # reset for 18S folder from before
 
+
+EURKAYOME 18S Database
+
+workdir="/Users/drocean/Desktop/classifer_database_18S/EUKARYOME_1_9_4"
+cd "$workdir"
+
+qiime tools import \
+  --type 'FeatureData[Sequence]' \
+  --input-path /Users/drocean/Desktop/classifer_databse_18S/EUKARYOME_1_9_4/QIIME2_EUK_SSU_v1.9.4.fasta \
+  --output-path eukaryome-194-ssu-ref-seqs-dna.qza
+                                                # already is dna sequences not rna
+  
+qiime tools import \
+  --type 'FeatureData[Taxonomy]' \
+  --input-format HeaderlessTSVTaxonomyFormat \
+  --input-path /Users/drocean/Desktop/classifer_databse_18S/EUKARYOME_1_9_4/QIIME2_EUK_SSU_v1.9.4.tsv \
+  --output-path eukaryome-194-ssu-ref-taxonomy.qza
+  
+qiime rescript dereplicate \
+  --i-sequences eukaryome-194-ssu-ref-seqs-dna.qza \
+  --i-taxa eukaryome-194-ssu-ref-taxonomy.qza \
+  --p-mode 'uniq' \
+  --o-dereplicated-sequences eukaryome-194-ssu-ref-seqs-derep-uniq.qza \
+  --o-dereplicated-taxa eukaryome-194-ssu-tax-derep-uniq.qza
+
+qiime feature-classifier extract-reads \
+    --i-sequences eukaryome-194-ssu-ref-seqs-derep-uniq.qza \
+    --p-f-primer AATGATACGGCGACCACCGAGATCTACAC \
+    --p-r-primer TGATCCTTCTGCAGGTTCACCTAC \
+    --p-n-jobs 8 \
+    --p-read-orientation 'forward' \
+    --o-reads silva-132.0-ssu-nr99-seqs-F04-R22.qza
+
+qiime feature-classifier fit-classifier-naive-bayes \
+  --i-reference-reads eukaryome-194-ssu-ref-seqs-F04-R22.qza \
+  --i-reference-taxonomy eukaryome-194-ssu-ref-taxonomy.qza \
+  --o-classifier eukaryome-194-F04-R22-classifier.qza
