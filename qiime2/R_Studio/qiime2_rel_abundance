@@ -9,7 +9,7 @@ library(forcats)
 1.0 Import Data
 
 # delete the empty column and paste special transpose in excel (should be a site column then OTU columns)
-
+df <- rel_table
 View(df)
 
 df <- df %>%
@@ -31,6 +31,11 @@ df <- pivot_longer(
   names_to = "TAXON",
   values_to = "rel_ab"
 )
+
+df$site <- str_replace_all(df$site, "_S(1[3-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9]|6[0-9]).gz", "")
+
+df <- df %>%
+  mutate(site = str_replace(site, "_S.gz", ""))
 
 df <- df %>%
   mutate(TAXON = str_replace(TAXON, ";__",""),
@@ -68,7 +73,11 @@ graph # just standard R graph abundance
   "darkseagreen", "darkcyan", "azure4", "darksalmon","olivedrab", "orange", "blue", "tomato2", "grey47",
   "darkslateblue", "cyan3", "magenta", "palegoldenrod", "dodgerblue", "firebrick", "darkgoldenrod4",
   "lightblue", "darkgrey", "mediumpurple1", "darkgreen", "tan4","purple4", "deeppink4", "darkblue", "yellowgreen")
-# pick which colors you want in the specific order
+# pick which colors you want in the specific order or use random color generator
+
+num_colors <- 10 # use the number of groups there are
+
+colors <- distinctColorPalette(num_colors)
 
 colors <- c(
   "firebrick", "darksalmon", "tomato2", "orange","darkgoldenrod4", "darkseagreen", "olivedrab", "darkgreen", "darkcyan","dodgerblue", "darkblue", "mediumpurple1","darkslateblue", "purple4","deeppink4", "grey47")
