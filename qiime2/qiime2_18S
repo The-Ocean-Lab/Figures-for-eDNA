@@ -121,7 +121,12 @@ qiime feature-classifier classify-sklearn \
   --i-reads rep-seqs.qza \
   --p-n-jobs 4 \
   --o-classification taxonomy.qza
-                                               # use the absolute pathname of the trained database and assigns taxonomy to ASVs
+
+qiime feature-classifier fit-classifier-naive-bayes \
+  --i-reference-reads eukaryome-194-ssu-ref-seqs-F04-R22.qza \
+  --i-reference-taxonomy eukaryome-194-ssu-ref-taxonomy.qza \
+  --o-classifier eukaryome-194-F04-R22-classifier.qza
+                                               # use the absolute pathname of the trained database and assigns taxonomy to ASVs, silva better for microorganisms
 
 qiime metadata tabulate \
   --m-input-file taxonomy.qza \
