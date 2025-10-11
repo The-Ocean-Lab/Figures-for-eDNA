@@ -122,10 +122,11 @@ qiime feature-classifier classify-sklearn \
   --p-n-jobs 4 \
   --o-classification taxonomy.qza
 
-qiime feature-classifier fit-classifier-naive-bayes \
-  --i-reference-reads eukaryome-194-ssu-ref-seqs-F04-R22.qza \
-  --i-reference-taxonomy eukaryome-194-ssu-ref-taxonomy.qza \
-  --o-classifier eukaryome-194-F04-R22-classifier.qza
+qiime feature-classifier classify-sklearn \
+  --i-classifier /Users/drocean/Desktop/classifer_databse_18S/EUKARYOME_1_9_4/eukaryome-194-F04-R22-classifier.qza \
+  --i-reads rep-seqs.qza \
+  --p-n-jobs 4 \
+  --o-classification taxonomy.qza
                                                # use the absolute pathname of the trained database and assigns taxonomy to ASVs, silva better for microorganisms
 
 qiime metadata tabulate \
@@ -137,8 +138,18 @@ qiime taxa barplot \
   --i-taxonomy taxonomy.qza \
   --o-visualization VIEWABLE_taxa-bar-plots.qzv 
                                                # veiwable bar plot with relative frequencies of kingdoms
+5.0 Generate Tree
 
-Downstream Organization
+qiime phylogeny align-to-tree-mafft-fasttree \
+  --i-sequences rep-seqs.qza \
+  --o-alignment aligned-rep-seqs.qza \
+  --o-masked-alignment masked-aligned-rep-seqs.qza \
+  --o-tree unrooted-tree.qza \
+  --o-rooted-tree rooted-tree.qza \
+  --p-n-threads 4                              # XXX what does this do 
+
+
+Format Data
 
 mkdir alpha_div
 mkdir beta_div
@@ -146,15 +157,42 @@ mkdir R
 mkdir ancom                                    # makes folder with all these titles
 
 
+mapping="/Users/drocean/Desktop/zuri_qiime2/18S/mapping.csv"
+                                               # set mapping.csv as mapping for the next set of commands
+cp "$mapping" alpha_div/
+cp "$mapping" beta_div/
+cp "$mapping" R/
+cp "$mapping" ancom/                           # puts a copy of the mapping.csv in each folder
 
+taxonomy="/Users/drocean/Desktop/zuri_qiime2/18S/taxonomy.qza"
+table="/Users/drocean/Desktop/zuri_qiime2/18S/table.qza"
+                                               # sets taxonomy and table for the next set of commands
+qiime taxa filter-table \
+  --i-table $table \
+  --i-taxonomy $taxonomy \
+  --p-exclude mitochondria,chloroplast \
+  --o-filtered-table filtered-table
+                                               # filters out mitochondria and chloroplast sequences
 
+qiime feature-table summarize \
+  --i-table /Users/drocean/Desktop/zuri_qiime2/18S/filtered-table.qza \
+  --o-visualization VIEWABLE_chloroplast-mitochondria_filtered-table.qzv
+                                               # viewable frequency table with new exclusions 
+cutoff=0                                       # filters out anything with a frequency of 0 (so no filtering)
 
+qiime feature-table filter-samples \
+  --i-table /Users/drocean/Desktop/zuri_qiime2/18S/filtered-table.qza \
+  --p-min-frequency $cutoff \
+  --o-filtered-table filtered-cutoff-table    # if cutoff=0 then no filtering and there will be a "no filtering requested" error
+
+cp filtered-cutoff-table.qza ancom
+mv ancom/filtered-cutoff-table ancom/filtered_feature-table.qza
 
 
 Relative Abundance
 
 qiime taxa collapse \
-  --i-table /Users/drocean/Desktop/18S_Winter_2025/ancom/filtered_feature-table.qza \
+  --i-table filtered-table.qza \
   --i-taxonomy taxonomy.qza \
   --p-level 2 \
   --o-collapsed-table phyla-table.qza 
@@ -171,6 +209,57 @@ cd rel-table                                 # goes into rel-table folder
 biom convert -i freq-table.biom -o rel-phyla-table.tsv --to-tsv
                                              # converts into a .tsv file 
 
+Alpha Rarefraction
 
+# pull up VIEWABLE_chloroplast-mitochondria_filtered-table.qzv as a guide to determine the subsampling depth
+# saving mapping file as a tsv with sample id, year, month, date, season, site, replicate, forward path, and reverse path
 
+cp filtered-cutoff-table.qza alpha_div       # puts a copy of filtered-cutoff-table into alpha_div folder
+
+qiime diversity alpha-rarefaction \
+  --i-table filtered-cutoff-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-max-depth # \
+  --m-metadata-file metadata.tsv \
+  --o-visualization alpha-rarefaction.qzv    # choose --p-max-depth based on freq summary
+
+# download shannon diversity as a csv and move to 18S folder
+
+mv shannon.csv alpha_div                     # moves shannon.csv to alpha_div
+mv alpha-rarefaction.qzv alpha_div           # moves alpha-rarefraction.qzv to alpha div
+
+Alpha and Beta Diversity
+
+qiime diversity core-metrics-phylogenetic \
+  --i-phylogeny rooted-tree.qza \
+  --i-table filtered-cutoff-table.qza \
+  --p-sampling-depth # \
+  --m-metadata-file metadata.tsv \
+  --output-dir core-metrics-results
+
+                                             # use the same sampling depth number as the rarefaction command
+
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity core-metrics-results/faith_pd_vector.qza \
+  --m-metadata-file metadata.tsv \
+  --o-visualization core-metrics-results/faith-pd-group-significance.qzv
+
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity core-metrics-results/evenness_vector.qza \
+  --m-metadata-file metadata.tsv \
+  --o-visualization core-metrics-results/evenness-group-significance.qzv
+
+qiime diversity beta-group-significance \
+  --i-distance-matrix core-metrics-results/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file metadata.tsv \
+  --m-metadata-column Site \
+  --o-visualization core-metrics-results/unweighted-unifrac-site-significance.qzv \
+  --p-pairwise
+
+qiime diversity beta-group-significance \
+  --i-distance-matrix core-metrics-results/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file metadata.tsv \
+  --m-metadata-column Season \
+  --o-visualization core-metrics-results/unweighted-unifrac-season-significance.qzv \
+  --p-pairwise
 
