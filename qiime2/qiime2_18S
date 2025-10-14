@@ -174,8 +174,10 @@ qiime taxa filter-table \
   --o-filtered-table filtered-table
                                                # filters out mitochondria and chloroplast sequences
 
+table="/Users/drocean/Desktop/zuri_qiime2/18S/filtered-table.qza"
+
 qiime feature-table summarize \
-  --i-table /Users/drocean/Desktop/zuri_qiime2/18S/filtered-table.qza \
+  --i-table $table \
   --o-visualization VIEWABLE_chloroplast-mitochondria_filtered-table.qzv
                                                # viewable frequency table with new exclusions 
 cutoff=0                                       # filters out anything with a frequency of 0 (so no filtering)
@@ -205,8 +207,9 @@ qiime tools export \
   --input-path rel-phyla-table.qza \
   --output-path rel-table                    # creates a folder called rel-table and puts the folder in there
 
+cp rel-phyla-table.qza rel-table
 cd rel-table                                 # goes into rel-table folder
-biom convert -i freq-table.biom -o rel-phyla-table.tsv --to-tsv
+biom convert -i feature-table.biom -o rel-phyla-table.tsv --to-tsv
                                              # converts into a .tsv file 
 
 Alpha Rarefraction
