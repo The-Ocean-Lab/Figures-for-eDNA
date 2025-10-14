@@ -137,7 +137,7 @@ qiime taxa barplot \
   --i-table table.qza \
   --i-taxonomy taxonomy.qza \
   --o-visualization VIEWABLE_taxa-bar-plots.qzv 
-                                               # veiwable bar plot with relative frequencies of kingdoms
+                                               # viewable bar plot with relative frequencies of kingdoms
 5.0 Generate Tree
 
 qiime phylogeny align-to-tree-mafft-fasttree \
