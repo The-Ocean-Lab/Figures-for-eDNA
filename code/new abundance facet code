@@ -1,0 +1,63 @@
+library(tidyverse)
+library(openxlsx)
+library(ggplot2)
+#Opti_mcc.shared with corrected names and ALGAE/numotu and label removed is called
+#newsilvacorrectednames
+
+final_opti_mcc_1_ <- final_opti_mcc_1_ %>%  
+  filter(sample_id != "ALGAE")%>%
+  mutate(Group = recode(Group, 
+                        "JP_101124_16" = "F24SPR1",
+                        "JP_101124_17" = "F24SPR1_2",
+                        "JP_101124_18" = "F24SPR1_3",
+                        "JP_101124_13"="F24SNR1",
+                        "JP_101124_14"="F24SNR1_2",
+                        "JP_101124_15"="F24SNR1_3",
+                        "JP" = "F24SC1",
+                        "JP_101124" = "F24SC1_2",
+                        "JP_101124_12" = "F24SC1_3"))%>%
+  filter(sample_id != "ALGAE") %>% # Taking out algae
+  rename_all(tolower)%>%
+  select(-label, -numOtus)%>%
+  rename(sample_id = Group)
+
+
+final_opti_mcc_1_ <- final_opti_mcc_1_%>%pivot_longer(-sample_id, 
+                                                      names_to = "otu",
+                                                      values_to = "count")
+
+Sites <- Sites %>%  rename(sample_id=Group)
+
+all <- inner_join(final_opti_mcc_1_,Sites, by="sample_id")%>%
+  inner_join(.,fallconstaxnewsilva,by="otu")%>%
+  
+  
+  
+  relativeabund<-all%>%
+  group_by(sample_id)%>%
+  mutate(rel_abund=count/sum(count))%>%
+  ungroup()%>%
+  select(-count)%>% #Check if they equal to 1 at this stage
+  pivot_longer(cols=c("kingdom", "phylum", "class", "order", "family", "genus","otu"), 
+               names_to = "level",
+               values_to = "taxon")%>%
+  mutate(relativeabund,taxon = str_replace_all(taxon,"\\(\\d+\\)",""),
+         taxon = str_replace(taxon, ";$", "")) 
+
+
+
+relativeabund%>% #Checking that all the relative abundances added up to one, This changes as we go through the workflow, don't be scared
+  group_by(sample_id)%>%
+  summarize(total=sum(rel_abund))
+
+###############################################################################
+#New triple plot 
+phylum_colors <- c(
+  "grey22", "darkcyan", "orchid1", "green", "orange", "blue", "tomato2", "olivedrab", "grey47",
+  "cyan", "coral3", "darkgreen", "magenta", "palegoldenrod", "dodgerblue", "firebrick", "yellow", 
+  "purple4", "lightblue", "grey77", "mediumpurple1", "tan4", "red", "darkblue", "yellowgreen",
+  "slateblue", "seagreen", "gold", "plum", "mediumvioletred", "darkorange", "chartreuse4", 
+  "indianred", "royalblue3", "skyblue3","brown","cornsilk","blueviolet" )
+
+
+
