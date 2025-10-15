@@ -1,1 +1,188 @@
+# getting percent abundance of everything in the entire data set
+
+library(tidyverse)
+library(openxlsx)
+library(ggplot2)
+#Opti_mcc.shared with corrected names and ALGAE/numotu and label removed is called
+#newsilvacorrectednames
+
+final_opti_mcc_1_ <- final_opti_mcc_1_ %>%  
+  filter(sample_id != "ALGAE")%>%
+  mutate(Group = recode(Group, 
+                        "JP_101124_16" = "F24SPR1",
+                        "JP_101124_17" = "F24SPR1_2",
+                        "JP_101124_18" = "F24SPR1_3",
+                        "JP_101124_13"="F24SNR1",
+                        "JP_101124_14"="F24SNR1_2",
+                        "JP_101124_15"="F24SNR1_3",
+                        "JP" = "F24SC1",
+                        "JP_101124" = "F24SC1_2",
+                        "JP_101124_12" = "F24SC1_3"))%>%
+  filter(sample_id != "ALGAE") %>% # Taking out algae
+  rename_all(tolower)%>%
+  select(-label, -numOtus)%>%
+  rename(sample_id = Group)
+
+
+final_opti_mcc_1_ <- final_opti_mcc_1_%>%pivot_longer(-sample_id, 
+                                                      names_to = "otu",
+                                                      values_to = "count")
+
+Sites <- Sites %>%  rename(sample_id=Group)
+
+all <- inner_join(final_opti_mcc_1_,Sites, by="sample_id")%>%
+  inner_join(.,fallconstaxnewsilva,by="otu")%>%
+  
+ 
+
+relativeabund<-all%>%
+  group_by(sample_id)%>%
+  mutate(rel_abund=count/sum(count))%>%
+  ungroup()%>%
+  select(-count)%>% #Check if they equal to 1 at this stage
+  pivot_longer(cols=c("kingdom", "phylum", "class", "order", "family", "genus","otu"), 
+               names_to = "level",
+               values_to = "taxon")%>%
+  mutate(relativeabund,taxon = str_replace_all(taxon,"\\(\\d+\\)",""),
+                             taxon = str_replace(taxon, ";$", "")) 
+
+
+
+relativeabund%>% #Checking that all the relative abundances added up to one, This changes as we go through the workflow, don't be scared
+  group_by(site)%>%
+  summarize(total=sum(rel_abund))
+
+###############################################################################
+
+#Normal Pat Scloss Plot
+ relativeabund %>%
+  filter(level == "phylum")%>%
+  mutate(taxon = str_replace_all(taxon,"\\(\\d+\\)",""),
+         taxon = str_replace(taxon, ";$", ""))%>% 
+  group_by(sample_id, taxon)%>%
+  summarize(rel_abund=sum(rel_abund), .groups = "drop")%>%
+  group_by(sample_id, taxon)%>%
+   summarize(mean_rel_abund=100*mean(rel_abund),.groups = "drop")%>%
+   ggplot(aes(x=sample_id, y=mean_rel_abund,fill = taxon))+
+   geom_col()+
+   labs(x=NULL,
+        Y="Mean Relative Abundance (%)")
+ 
+#New triple plot 
+ phylum_colors <- c(
+   "grey22", "darkcyan", "orchid1", "green", "orange", "blue", "tomato2", "olivedrab", "grey47",
+   "cyan", "coral3", "darkgreen", "magenta", "palegoldenrod", "dodgerblue", "firebrick", "yellow", 
+   "purple4", "lightblue", "grey77", "mediumpurple1", "tan4", "red", "darkblue", "yellowgreen",
+   "slateblue", "seagreen", "gold", "plum", "mediumvioletred", "darkorange", "chartreuse4", 
+   "indianred", "royalblue3", "skyblue3","brown","cornsilk","blueviolet" )
+ 
+
+ 
+ fallphylaabundance_data <- relativeabund %>%
+   filter(level == "phylum")%>%
+   group_by(sample_id, taxon,Month, site,Replicate)%>%
+   summarize(rel_abund=sum(rel_abund), .groups = "drop")%>%
+   group_by(sample_id, taxon, Month,site,Replicate)%>%
+   summarize(mean_rel_abund=100*mean(rel_abund),.groups = "drop")
+ 
+ #Filter, group and modify data to prepare for plotting.
+ allagain <- all%>%
+   group_by(sample_id)%>%
+   mutate(rel_abund=count/sum(count))%>%
+   select(phylum, class, family, genus,Month,site,rel_abund,Replicate,sample_id)%>%
+   filter(rel_abund !=0) %>%
+   mutate(
+     phylum = as.character(phylum),
+     class = as.character(class),
+     family = as.character(family),
+     genus = as.character(genus))%>%
+   mutate(phylum = str_replace_all(phylum,"\\(\\d+\\)",""),
+          phylum = str_replace(phylum, ";$", "")) 
+   
+ #prep for plotting
+ 
+ phylum2 <- allagain%>%
+   select(phylum,Month,site,rel_abund,Replicate,sample_id)%>%
+   group_by(Month,site,sample_id)%>%
+   mutate(totalSum = sum(rel_abund))%>%
+   ungroup()%>%
+   group_by(Month,site,sample_id,phylum)%>%
+   summarise(
+     abundance=sum(rel_abund),
+     totalSum,
+     RelAb=(abundance/totalSum))%>%
+   unique()
+   
+   length(unique(phylum2$phylum))
+ 
+ 
+ 
+   newplot <- ggplot(fallphylaabundance_data)+
+   geom_col(mapping = aes( x=Month, y=rel_abund,fill = phylum))+
+   facet_grid(cols = vars(site))+
+   ylab("Relative Abundance (%)") +
+   xlab(NULL)+
+   scale_fill_manual(values = phylum_colors) +
+   theme_linedraw()+
+   theme(axis.text.y = element_text(size = 20, color = "black"),
+         axis.title.y = element_text(size = 18, color = "black"),
+         axis.text.x = element_text(size = 20, angle = 0, vjust = 1, hjust = 0.5, color = "black"),
+         legend.text = element_text(size = 13),
+         legend.position = "bottom",
+         legend.spacing.x = unit(0.1, 'mm'),
+         legend.spacing.y = unit(0.05, 'mm'),
+         plot.margin=grid::unit(c(0.1,0.1,0.1,0.1), "mm"),
+         strip.text = element_text(size = 18, face = "bold", angle = 0),
+         legend.title = element_text(face="bold", size = 22))+
+   guides(fill=guide_legend(ncol=3,byrow=TRUE))
+ 
+   dev.size()
+   ggsave("too-large.png", width = 13, height = 12)
+   
+ 
+ #Plotting other taxonomic levels, grouping low abundance taxa
+   
+   genus <- relativeabund %>%
+     filter(level == "genus")%>%
+     group_by(sample_id,site.x,Replicate, taxon)%>%
+     summarize(rel_abund=sum(rel_abund), .groups = "drop")%>%
+     group_by(sample_id,site.x, taxon,Replicate)%>%
+     summarize(mean_rel_abund=100*mean(rel_abund),.groups = "drop")
+   head(genus)
+#group low abundance genera into a single category. 
+#Starting with the data frame “all” created earlier, we will group all of 
+#the genera present at less than 5% relative abundance into a single group
+
+   
+    filter(taxon=="Pseudomonadota")%>% #this allows us to see on average which site had more of this phyla
+  arrange(desc(mean_rel_abund)) #arranges just the meanrel abund by highest to lowest 
+
+
+##########################################################################
+fallpercentabund <- fallphylaabundance_data %>%
+  filter(level == "phylum") %>%  # Filter for phylum-level taxa
+  group_by(sample_id, taxon) %>%  # Group by sample and taxon (phylum)
+  mutate(rel_abund = sum(rel_abund), .groups = "drop") %>%  # Sum relative abundance for each taxon in each sample
+  group_by(sample_id) %>%  # Group by sample to get the total for each sample
+  mutate(perc_abund = rel_abund / sum(rel_abund) * 100) %>%  # Calculate percentage for each phylum in each sample
+  arrange(sample_id, desc(perc_abund))  # Optionally arrange by sample_id and percentage
+
+write.xlsx(fallpercentabund, "fallpercentabund.xlsx")
+
+
+fallgenusabundance_data <- relativeabund %>%
+  filter(level == "genus")
+
+fallgenuspercentabund <- fallgenusabundance_data %>%
+  filter(level == "genus") %>%  # Filter for phylum-level taxa
+  group_by(sample_id, taxon) %>%  # Group by sample and taxon (phylum)
+  summarize(rel_abund = sum(rel_abund), .groups = "drop") %>%  # Sum relative abundance for each taxon in each sample
+  group_by(sample_id) %>%  # Group by sample to get the total for each sample
+  mutate(perc_abund = rel_abund / sum(rel_abund) * 100) %>%  # Calculate percentage for each phylum in each sample
+  arrange(sample_id, desc(perc_abund))  # Optionally arrange by sample_id and percentage
+
+write.xlsx(fallpercentabund, "fallpercentabund.xlsx")
+
+
+
 
