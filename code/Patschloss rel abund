@@ -1,0 +1,314 @@
+library(tidyverse)
+library(openxlsx)
+library(ggplot2)
+#Opti_mcc.shared with corrected names and ALGAE/numotu and label removed is called
+#newsilvacorrectednames   
+
+phylum_colors <- c(
+  "green", "orange", "blue", "tomato2", "olivedrab", "grey47",
+  "cyan", "coral3", "darkgreen", "magenta", "palegoldenrod", "dodgerblue", "firebrick", "yellow", 
+  "purple4", "lightblue", "grey77", "mediumpurple1", "tan4", "red", "darkblue", "yellowgreen",
+  "slateblue", "seagreen", "gold", "plum", "mediumvioletred", "darkorange", "chartreuse4", 
+  "indianred", "royalblue3", "skyblue3","brown","cornsilk","blueviolet" )
+
+final_opti_mcc_1_ <- final_opti_mcc_1_ %>%  
+  filter(sample_id != "ALGAE")%>%
+  mutate(Group = recode(Group, 
+                        "JP_101124_16" = "F24SPR1",
+                        "JP_101124_17" = "F24SPR1_2",
+                        "JP_101124_18" = "F24SPR1_3",
+                        "JP_101124_13"="F24SNR1",
+                        "JP_101124_14"="F24SNR1_2",
+                        "JP_101124_15"="F24SNR1_3",
+                        "JP" = "F24SC1",
+                        "JP_101124" = "F24SC1_2",
+                        "JP_101124_12" = "F24SC1_3"))%>%
+  filter(sample_id != "ALGAE") %>% # Taking out algae
+  rename_all(tolower)%>%
+  select(-label, -numOtus)%>%
+  rename(sample_id = Group)
+
+
+final_opti_mcc_1_ <- final_opti_mcc_1_%>%pivot_longer(-sample_id, 
+                                                      names_to = "otu",
+                                                      values_to = "count")
+
+Sites <- Sites %>%  rename(sample_id=Group)
+
+all <- inner_join(final_opti_mcc_1_,Sites, by="sample_id")%>%
+  inner_join(.,fallconstaxnewsilva,by="otu")%>%
+  
+  
+  
+  relativeabund<-all%>%
+  pivot_longer(cols=c("kingdom", "phylum", "class", "order", "family", "genus","otu"), 
+               names_to = "level",
+               values_to = "taxon")%>%
+  mutate(taxon = str_replace_all(taxon,"\\(\\d+\\)",""),
+         taxon = str_replace(taxon, ";$", ""))%>%
+  group_by(sample_id)%>% #When creating rel_abund, you need to group_by count because we need every sample to be counted
+  mutate(rel_abund=count/sum(count))%>% 
+  ungroup()%>%
+  select(-count) #Check if they equal to 1 at this stage
+ 
+
+relativeabund%>% #Checking that all the relative abundances added up to one, This changes as we go through the workflow, don't be scared
+  group_by(sample_id)%>%
+  summarize(total=sum(rel_abund))
+
+###############################################################################
+
+fallphylaabundance_data <- all %>%
+  select(phylum,site,sample_id,Month,count)%>%
+  mutate(phylum = str_replace_all(phylum ,"\\(\\d+\\)",""),
+         phylum = str_replace(phylum , ";$", ""))%>%
+  group_by(site)%>%
+  mutate(rel_abund=count/sum(count))%>%
+  ungroup()%>%
+  select(-count)
+  #This exact workflow is the only thing i got to work that maintains rel_abun equa to 1
+
+fallphylaabundance_data%>% #Checking that all the relative abundances added up to one, This changes as we go through the workflow, don't be scared
+  group_by(site)%>%
+  summarize(total=sum(rel_abund))
+
+#myeditedpatschloss graph
+fallphylaabundance_data %>%
+  group_by(site, phylum)%>%
+  ggplot(aes(fallphylaabundance_data, x=site, y=rel_abund,fill = phylum))+
+  geom_col()+
+  labs(x=NULL,
+       Y="Mean Relative Abundance (%)")+
+  scale_fill_manual(values = phylum_colors)
+ggsave("patschlossabundancenofacets.png", width = 17, height = 10)
+
+#IT WORKS AND ITS BEAUTIFUL!
+
+#Normal Pat Scloss Plot
+relativeabund %>%
+  filter(level == "phylum")%>%
+  group_by(site, taxon)%>%
+  summarize(rel_abund=sum(rel_abund), .groups = "drop")%>%
+  group_by(sample_id, taxon)%>%
+  summarize(mean_rel_abund=100*mean(rel_abund),.groups = "drop")%>%
+  ggplot(aes(x=sample_id, y=mean_rel_abund,fill = taxon))+
+  geom_col()+
+  labs(x=NULL,
+       Y="Mean Relative Abundance (%)")+
+  scale_fill_manual(values = phylum_colors)
+  
+ggsave("patschlossabundancefall.png", width = 17, height = 10)
+
+###########################################################################
+#Top 10 relativeabundance graph
+
+#New tutorial# i have no idea how this code works, ive given up and switched to the goat's tutorial below 5/20
+mean_freqs <- all%>%
+  group_by(sample_id,phylum)%>% 
+  mutate(phylum = str_replace_all(phylum ,"\\(\\d+\\)",""),
+                                       phylum   = str_replace(phylum , ";$", ""))%>%
+  summarise(phyl_count = sum(count),
+            .groups = 'drop') %>%
+  group_by(sample_id) %>%
+  reframe(phyl_freq = 100*(phyl_count / sum(phyl_count)),
+            phylum = phylum,
+            .groups = 'drop') %>%
+  group_by(phylum) %>%
+  summarise(mean = mean(phyl_freq),
+            .groups = 'drop') %>%
+  arrange(desc(mean))
+print(mean_freqs)
+  
+meanall <- inner_join(mean_freq)
+
+
+#Creating a new column of all values organisms whose
+#relative abundance is less that 10 Chlorobiota-0.00599 relative abundance
+  
+
+  
+  #Old top 10 tutorial
+   mutate(rel_abund=count/sum(count))%>%
+  ungroup()%>%
+  select(-count)%>%
+  select(phylum,site,sample_id,Month,rel_abund)%>%
+  mutate(phylum= str_replace_all(phylum,"\\(\\d+\\)",""),
+         phylum = str_replace(phylum, ";$", ""))%>%
+  group_by(site, phylum) %>%
+  summarize(rel_abund = sum(rel_abund), .groups = "drop") %>%  # Sum the relative abundance for each taxon
+  arrange(desc(rel_abund)) %>%  # Order by relative abundance
+  mutate(perc_abund = rel_abund * 100)%>%
+  head(10)   # Select top 10 phyla
+
+#all top 10 per site are pseudomonodata, but 
+
+################################################################################
+#Plotting relative abundance of just September
+
+allsept <- all [all$Month == 'Sept',]
+
+allsept_data <- allsept %>%
+  select(phylum,site,sample_id,Month,count)%>%
+  mutate(phylum = str_replace_all(phylum ,"\\(\\d+\\)",""),
+         phylum = str_replace(phylum , ";$", ""))%>%
+  group_by(site)%>%
+  reframe(rel_abund=count/sum(count))%>%
+  ungroup()
+
+#This exact workflow is the only thing i got to work that maintains rel_abun equa to 1
+
+allsept_data %>% #Checking that all the relative abundances added up to one, This changes as we go through the workflow, don't be scared
+  group_by(site)%>%
+  summarize(total=sum(rel_abund))
+
+#myeditedpatschloss graph
+allsept_data %>%
+  group_by(site, phylum)%>%
+  ggplot(aes(allsept_data, x=site, y=rel_abund,fill = phylum))+
+  geom_col()+
+  labs(x=NULL,
+       Y="Mean Relative Abundance (%)")+
+  scale_fill_manual(values = phylum_colors)
+ggsave("septpatschlossabundancenofacets.png", width = 17, height = 10)
+
+##################################################################################
+#Plotting relative abundance of just November
+
+allnov <- all [all$Month == 'Nov',]
+
+allnov_data <- allnov%>%
+  select(phylum,site,sample_id,Month,count)%>%
+  mutate(phylum = str_replace_all(phylum ,"\\(\\d+\\)",""),
+         phylum = str_replace(phylum , ";$", ""))%>%
+  group_by(site)%>%
+  mutate(rel_abund=count/sum(count))%>%
+  ungroup()%>%
+  select(-count)
+#This exact workflow is the only thing i got to work that maintains rel_abun equa to 1
+
+allnov_data %>% #Checking that all the relative abundances added up to one, 
+  group_by(site)%>%
+  summarize(total=sum(rel_abund))
+
+#myeditedpatschloss graph
+allnov_data  %>%
+  group_by(site, phylum)%>%
+  ggplot(aes(allnov_data , x=site, y=rel_abund,fill = phylum))+
+  geom_col()+
+  labs(x=NULL,
+       Y="Mean Relative Abundance (%)")+
+  scale_fill_manual(values = phylum_colors)
+ggsave("novpatschlossabundancenofacets.png", width = 17, height = 10)
+
+
+###################################################################################
+
+#Plotting relative abundance of just September (Trying to make "other")
+
+allsept <- all [all$Month == 'Sept',]
+
+allsept_data <- allsept %>%
+  select(phylum,site,sample_id,Month,count)%>%
+  mutate(phylum = str_replace_all(phylum ,"\\(\\d+\\)",""),
+         phylum = str_replace(phylum , ";$", ""))%>%
+  group_by(site,sample_id)%>%
+  mutate(mean_rel_abund=100*(count/sum(count)))%>%
+  ungroup()%>%
+  select(-count)
+  
+#This exact workflow is the only thing i got to work that maintains rel_abun equa to 1
+
+allsept_data %>% #Checking that all the relative abundances added up to one, This changes as we go through the workflow, don't be scared
+  group_by(site,sample_id)%>%
+  summarize(total=sum(mean_rel_abund))
+
+#Creating mean relabund and checking abundances
+allsept_data%>%
+  group_by(phylum)%>%
+  summarize(max=max(mean_rel_abund))%>%
+  arrange(desc(max))
+
+select(phylum,site,sample_id,Month,count)%>%
+  mutate(phylum = str_replace_all(phylum ,"\\(\\d+\\)",""),
+         phylum = str_replace(phylum , ";$", ""))%>%
+  group_by(site,sample_id)%>%
+  mutate(mean_rel_abund=100*(count/sum(count)))%>%
+  ungroup()%>%
+  select(-count)
+##########################################################33
+
+#Trying to pool "other" with all the data
+
+all_other <- all%>%
+  mutate(phylum = str_replace_all(phylum ,"\\(\\d+\\)",""),
+         phylum = str_replace(phylum , ";$", ""))%>%
+  group_by(sample_id)%>% #When creating rel_abund, you need to group_by sample_id because we need every sample to be counted
+  mutate(rel_abund=count/sum(count))%>%
+  ungroup()%>%
+  select(-count)%>% #check if equal to 1 here
+  group_by(site,sample_id,phylum)%>% #within each sample  i want to pool this to phylum so i get the abundance of each phyla in the sample
+  summarize(rel_abund=sum(rel_abund), .groups = 'drop')%>% #I added site just cuz i wanted it back in the dataframe
+  group_by(site,phylum)%>% #I want 3 stacked bar charts, 1 per site, so i am going to average the abundances across sites
+  summarize(mean_rel_abund=100*mean(rel_abund),.groups='drop')%>%
+  mutate(phylum = str_replace(phylum,
+                              "(.*)_unclassified", "Unclassified *\\1*"),
+         phylum = str_replace(phylum,
+                              "^(\\S*)$", "*\\1*"))
+
+
+all_other%>% #Checking that all the relative abundances added up to one, This changes as we go through the workflow, don't be scared
+  group_by(site)%>%
+  summarize(total=sum(mean_rel_abund))
+
+ 
+all_other%>%
+  group_by(phylum)%>% #because we want maximum abundance of each phylum across each site
+  summarize(max=max(mean_rel_abund))%>%
+  arrange(desc(max))
+
+#Our smallest phyla max according to pat schloss should be Planctomycetota because
+#its max mean_rel_abund is 2.94 and everything under that is probs too small to see on a graph
+
+
+all_pool <- all_other%>%
+  group_by(phylum)%>% #because we want maximum abundance of each phylum across each site
+  summarize(pool=max(mean_rel_abund) < 2.5,
+            mean=mean(mean_rel_abund),.groups="drop") #this gives me the mean across the average relative abundances of each phyla across each group
+#arrange(desc(max))
+
+inner_join(all_other, all_pool, by="phylum")%>%
+  mutate(phylum=if_else(pool,"Other", phylum))%>%
+  group_by(site,phylum)%>%  #We want to keep each site seperate, otherwise it would average them 
+  summarize(mean_rel_abund=sum(mean_rel_abund), 
+            mean=sum(mean), #the sum is going to be the same for the larger phyla but for the others itll be rly low
+            .groups = "drop")%>%
+  mutate(phylum=factor(phylum),
+         phylum=fct_reorder(phylum,mean, .desc=TRUE),#pull(phylum)%>%levels() #we are re ordering the bars by their abundance
+         phylum=fct_shift(phylum,n=1))%>% #This shifts it by one so our second most abundant is at the bottom toshift the eye
+  ggplot(aes( x=site, y=mean_rel_abund,fill = phylum))+
+  geom_col()+
+  scale_fill_manual(name=NULL,
+                        breaks=c("*Pseudomonadota*",  "*Chloroflexota*",  
+                                 "*Bacteroidota*", "*Acidobacteriota*","*Planctomycetota*","Unclassified *Bacteria*","Other"),
+                        values=c(  "darkblue", "skyblue3", "yellowgreen","gold",
+                                    "mediumpurple1", "darkorange","lightblue"))+ #the other thing reordered the bars, this reorders the legend
+  scale_y_continuous(expand=c(0,0))+
+  labs(x=NULL,
+       Y="Mean Relative Abundance (%)")+
+  theme_classic()
+ggsave("allfallabundancebysite2025.png", width = 11, height = 10)
+
+phylum_colors <- c(
+  "green", "orange", "blue", "tomato2", "olivedrab", "grey47",
+  "cyan", "coral3", "darkgreen", "magenta", "palegoldenrod", "dodgerblue", "firebrick", "yellow", 
+  "purple4", "lightblue", "grey77", "mediumpurple1", "tan4", "red", "darkblue", "yellowgreen",
+  "slateblue", "seagreen", "gold", "plum", "mediumvioletred", "darkorange", "chartreuse4", 
+  "indianred", "royalblue3", "skyblue3","brown","cornsilk","blueviolet" )
+
+
+
+
+###############################################################################
+
+
+
