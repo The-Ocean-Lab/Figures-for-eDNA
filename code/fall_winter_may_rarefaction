@@ -1,0 +1,59 @@
+library(tidyverse)
+#Rarefaction is really a tool for asking the question, “How many types of things would I have observed if I had only sampled N things?”
+
+rarefy<-rarefaction_file
+#used the file after rarefaction command, ends in _groups
+#numsampled = 100297
+
+#columns represent: 1. average at the specified number of sequences sampled
+#2. 2nd and 3rd are lower and higher confidence intervals
+
+#we dont want the lci and hci ones
+
+rarefy<-rarefy%>%select(-contains("lci-")) %>%
+  select(-contains("hci-")) #removelci andhci
+
+
+#make it tidy and long
+rarefy<-rarefy%>%
+  pivot_longer(cols=c(-numsampled), names_to='sample', values_to='sobs')
+
+#clean up sample names
+rarefy<-rarefy%>%mutate(sample=str_replace_all(sample, pattern="0.03-", replacement=""))%>%drop_na()
+
+#make lines on graph
+ggplot(rarefy, aes(x=numsampled, y=sobs, group=sample)) +
+  geom_line()
+
+rarefy<-rarefy%>%rename(group=sample)
+
+
+variable_rare <- inner_join(rarefy,Sites, by="group")
+
+normalplot<-ggplot(variable_rare, aes(x=numsampled, y=sobs, group=group, color=site)) +
+  geom_line()+
+  labs(title="Fall/Winter and May Rarefaction",
+       x="Number of Sequences Sampled per Subject",
+       y="Number of OTUs per Subject") +
+  theme_classic()
+print(normalplot)
+
+zoom_plot<-ggplot(variable_rare, aes(x=numsampled, y=sobs, group=group, color=site)) +
+  geom_vline(xintercept=10530,color="gray", linewidth=2)+ #call geom_vline before geom_line to put it behind tha points
+  geom_line()+
+  coord_cartesian(xlim=c(0,35000), ylim=c(0,8500)) +
+  labs(title="Fall/Winter and May Rarefaction",
+       x="Number of Sequences Sampled per Subject",
+       y="Number of OTUs per Subject") +
+  theme_classic()
+print(zoom_plot)
+
+#Looked at OG plot and looked at what x and y values that the most action is happening at
+
+
+
+#our datashould be rarefied to 400 so im adding a line (check this before presenting to committee)
+
+
+ggsave("FW_Mayrarefaction_zoom.png", plot = zoom_plot, 
+       width = 12, height = 8, dpi = 300)
