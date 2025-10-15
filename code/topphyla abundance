@@ -1,0 +1,117 @@
+library(tidyverse)
+library(ggplot2)
+library(ggtext)
+
+write.csv(final_opti_mcc,"otu_counts.csv")#how to save as a csv for excel, this file is too big for excel though
+
+
+metadata <- Wrightlabs_sequences%>%
+  select(SampleID)
+metadata[-c("Algae-112224"),]%>%
+ 
+  
+#cleaning data and changing everything to lowercase, we deleted taxonomy <-  cuz it makes everything flow better aparently 
+taxonomy <- read_tsv("C:/Users/Pinel/OneDrive/Desktop/R code/Figures/final.opti_mcc.0.03.cons.taxonomy")%>%
+  select("OTU","Taxonomy")%>%
+  rename_all(tolower)%>%
+  mutate(taxonomy = str_replace_all(taxonomy,"\\(\\d+\\)",""),
+         taxonomy = str_replace(taxonomy, ";$", ""))
+
+taxonomy<- separate(taxonomy,
+           col="taxonomy",
+           into = c("kingdom", "phylum", "class", "order", "family", "genus"), 
+           sep = ";")
+
+
+
+#stringr remove parenthesis (100) with number inside next to taxons 
+#"\\(\\d+\\)" is a regular expression argument and basically is (d+) which means a number greater than 1 and 
+#replaced it with nothing which is why its just quotes
+
+
+#pivot everything except sample ids AND TAKE OUT algaE, also filter out all counts lower than 100 and rename things
+otu_counts <- read_tsv("C:/Users/Pinel/OneDrive/Desktop/R code/Figures/final.opti_mcc.shared")%>%
+  select(-label,-numOtus)%>%
+  rename(sample_id=Group)%>%
+  pivot_longer(-sample_id,names_to = "otu",values_to = "counts")%>%
+  filter(sample_id!="ALGAE")%>%
+  rename_all(tolower)%>%
+  #filter(counts >=100) #take out filter so we can reach 100%
+
+#I renamed some things and for some reason, i had to run the above code line by line and it didnt work so
+#i made this new file which is the same the names r just updated
+otu_use<- 
+  mutate(otu_counts,sample_id = if_else(sample_id == "JP_101124_14", "Jp_101124_nr1_2", 
+                             if_else(sample_id == "JP_101124_17", "Jp_101124_pr1_2",sample_id)))
+  
+
+
+relativeabund<- inner_join(otu_counts,taxonomy)%>%
+  mutate(rel_abund=counts/sum(counts))%>%
+  select(-counts)%>%
+  pivot_longer(cols=c("kingdom", "phylum", "class", "order", "family", "genus","otu"), 
+               names_to = "level",
+               values_to = "taxon")
+
+
+###############################################################################
+#if I want to check if my relative abundance for each equals to one
+result <- relativeabund %>%
+  group_by(sample_id) %>%
+  summarize(total = sum(rel_abund))
+#ours wont equal to 1 because we subsampled it so all the data isnt there (we only included data>100)
+##############################################################################f
+# Making the actual graph
+
+# change mean and take it out
+
+relativeabund%>%
+  filter(level=="phylum")%>%
+  group_by(sample_id,taxon)%>%
+  #summarize(rel_abund=sum(rel_abund))%>%
+  summarize(mean_rel_abund=100*mean(rel_abund),.groups = "drop")%>%
+  ggplot(aes(x=sample_id,y=mean_rel_abund,fill=taxon))+
+  geom_col()+
+  labs(x=NULL,
+       y="Mean Relative Abundance(%)")+
+  theme_classic()+
+  theme(axis.text.x = element_markdown(),
+        legend.text = element_text(face = "italic"),
+        legend.key.size=unit(10,"pt"))
+
+ggsave("relativeabund1.tiff,width=5,height=4")
+#########################################################################################  
+
+
+ggplot(data = relativeabund, aes(x = sample_id, y = rel_abund, fill =taxon)) +
+  geom_bar(stat = "identity", position = "fill") +
+  scale_y_continuous(name = "Relative abundance", labels = scales::percent) +
+  theme(axis.text.x = element_text(angle = 90, size = 6),
+        axis.text.y = element_text(color = "black"),
+        strip.text = element_text(face = "bold"),
+        strip.background = element_blank())+
+  theme(
+    legend.position = "right",  # Moves the legend to the bottom
+    legend.text = element_text(size = 8),  # Adjusts the size of the legend text
+    legend.title = element_text(size = 10),  # Adjusts the size of the legend title
+    legend.key.size = unit(0.5, "cm")  # Adjusts the size of the legend keys
+  )
+
+
+ggplot(fallpr1phylaabundance_data, aes(x = sample_id, y = mean_rel_abund, fill = taxon)) +
+  geom_bar(stat = "identity", position = "fill") +
+  scale_y_continuous(name = "Relative abundance", labels = scales::percent) +
+  theme(axis.text.x = element_text(angle = 90, size = 6),
+        axis.text.y = element_text(color = "black"),
+        strip.text = element_text(face = "bold"),
+        strip.background = element_blank()) +theme(
+          legend.position = "right",  # Position the legend to the right
+          legend.text = element_text(size = 8),  # Reduce the size of the legend text
+          legend.title = element_text(size = 10),  # Adjust the size of the legend title
+          legend.key.size = unit(0.2, "cm"),  # Reduce the size of the legend keys (the boxes)
+          legend.key.width = unit(0.5, "cm"),  # Adjust the width of the legend keys
+          legend.box.spacing = unit(0.2, "cm")  # Reduce spacing between items in the legend
+        ) +
+  labs(title = "Top 100 Genera Relative Abundance by Sample")  # Add a title if needed
+ggsave("top_100_genera_relative_abundance.png", plot = p, 
+       width = 12, height = 8, dpi = 300)
