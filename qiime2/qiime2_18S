@@ -26,12 +26,12 @@ done                                                 # extracts the name of the 
                                                      # puts these extracted names in a file called ids.txt
 
 cd ..                                                # goes out of raw_data and into working directory 
-ls -d "$PWD/raw_data/"*.fastq.gz > paths.txt         # creates a file with all the path names for fasta.gz files
-paste -d "," ids.txt paths.txt > combined.csv        # combines the id.txt and path.txt files 
-awk -F "," '$2 ~ /_R1/ {print $1 "," $2 ",forward"}' combined.csv > forward.csv           
-                                                     # adds and labels the forward reads to the combined file
-awk -F "," '$2 ~ /_R2/ {print $1 "," $2 ",reverse"}' combined.csv > reverse.csv
-                                                     # adds and labels the reverse reads to the combined file
+ls -d "$PWD/raw_data/"*.fastq.gz > paths.txt && paste -d "," ids.txt paths.txt > combined.csv && awk -F "," '$2 ~ /_R1/ {print $1 "," $2 ",forward"}' combined.csv > forward.csv && awk -F "," '$2 ~ /_R2/ {print $1 "," $2 ",reverse"}' combined.csv > reverse.csv
+# creates a file with all the path names for fasta.gz files
+# combines the id.txt and path.txt files            
+# adds and labels the forward reads to the combined file
+# adds and labels the reverse reads to the combined file
+
 echo "sample-id,absolute-filepath,direction" > header.csv 
                                                      # creates a csv with sampleid, filepath and direction (just columns)
 cat header.csv forward.csv reverse.csv > mapping.csv # add the data from each file to the appropiate column
@@ -117,13 +117,13 @@ qiime feature-table tabulate-seqs \
 4.1 Assigning Taxonomy
 
 qiime feature-classifier classify-sklearn \
-  --i-classifier /Users/drocean/Desktop/classifer/silva-138-F04-R22-classifier.qza \
+  --i-classifier /Users/drocean/Desktop/classifer_database_18S/silva-138-F04-R22-classifier.qza \
   --i-reads rep-seqs.qza \
   --p-n-jobs 4 \
   --o-classification taxonomy.qza
 
 qiime feature-classifier classify-sklearn \
-  --i-classifier /Users/drocean/Desktop/classifer_databse_18S/EUKARYOME_1_9_4/eukaryome-194-F04-R22-classifier.qza \
+  --i-classifier /Users/drocean/Desktop/classifer_database_18S/EUKARYOME_1_9_4/eukaryome-194-F04-R22-classifier.qza \
   --i-reads rep-seqs.qza \
   --p-n-jobs 4 \
   --o-classification taxonomy.qza
