@@ -31,7 +31,7 @@ qiime rescript dereplicate \
                                                  # gets rid of duplicate seqs
 qiime feature-classifier extract-reads \
     --i-sequences silva-138.0-ssu-nr99-seqs-derep-uniq.qza \
-    --p-f-primer AATGATACGGCGACCACCGAGATCTACAC \
+    --p-f-primer GTACACACCGCCCGTC \
     --p-r-primer TGATCCTTCTGCAGGTTCACCTAC \
     --p-n-jobs 8 \
     --p-read-orientation 'forward' \
