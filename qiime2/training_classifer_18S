@@ -1,0 +1,64 @@
+#### Based on Wright Labs and Qiime2 SOP ####
+
+EURKAYOME 18S Database
+
+1.0 Set Work Directory
+
+workdir="/Users/drocean/Desktop/classifer_databse_18S/EUKARYOME_1_9_4"
+cd $workdir
+
+qiime tools import \
+  --type 'FeatureData[Sequence]' \
+  --input-path /Users/drocean/Desktop/classifer_databse_18S/EUKARYOME_1_9_4/QIIME2_EUK_SSU_v1.9.4.fasta \
+  --output-path eukaryome-194-ssu-ref-seqs-dna.qza    
+# converts downloaded file from Eurkaryome to a file that qiime2 can read
+
+qiime tools import \
+  --type 'FeatureData[Taxonomy]' \
+  --input-format HeaderlessTSVTaxonomyFormat \
+  --input-path /Users/drocean/Desktop/classifer_databse_18S/EUKARYOME_1_9_4/QIIME2_EUK_SSU_v1.9.4.tsv \
+  --output-path eukaryome-194-ssu-ref-taxonomy.qza
+# download and translates a taxonomy file 
+
+qiime rescript cull-seqs \
+    --i-sequences eukaryome-194-ssu-ref-seqs-dna.qza \
+    --o-clean-sequences eukaryome-194-ssu-ref-seqs-cleaned.qza
+# Remove sequences that have 5 or more ambiguous bases or any homopolymers that are 8 bases or more long
+
+qiime rescript filter-seqs-length-by-taxon \
+    --i-sequences eukaryome-194-ssu-ref-seqs-cleaned.qza \
+    --i-taxonomy eukaryome-194-ssu-ref-taxonomy.qza \
+    --p-labels Eukaryota \
+    --p-min-lens 1400 \
+    --o-filtered-seqs eukaryome-194-ssu-ref-seqs-filt.qza \
+    --o-discarded-seqs eukaryome-194-ssu-ref-seqs-discard.qza
+# Filters sequences based on length depending on taxonomy: Archaea (16S) >= 900 bp, Bacteria (16S) >= 1200 bp, and any Eukaryota (18S) >= 1400 bp
+# only used Eurkaryota 1400 bp
+
+qiime rescript dereplicate \
+    --i-sequences eukaryome-194-ssu-ref-seqs-filt.qza  \
+    --i-taxa eukaryome-194-ssu-ref-taxonomy.qza \
+    --p-mode 'uniq' \
+    --o-dereplicated-sequences eukaryome-194-ssu-ref-seqs-derep-uniq.qza \
+    --o-dereplicated-taxa eukaryome-194-ssu-ref-tax-derep-uniq.qza
+# keeps only unique seqs and taxonomy 
+
+qiime feature-classifier fit-classifier-naive-bayes \
+  --i-reference-reads eukaryome-194-ssu-ref-seqs-derep-uniq.qza \
+  --i-reference-taxonomy eukaryome-194-ssu-ref-tax-derep-uniq.qza \
+  --o-classifier eukaryome-194-F04-R22-classifier.qza
+
+
+
+######################################################################
+
+18S SILVA 138.2
+
+qiime rescript get-silva-data \
+    --p-version '138.2' \
+    --p-target 'SSURef_NR99' \
+    --o-silva-sequences silva-138.2-ssu-nr99-rna-seqs.qza \
+    --o-silva-taxonomy silva-138.2-ssu-nr99-tax.qza
+
+
+
