@@ -183,7 +183,7 @@ qiime feature-table summarize \
 cutoff=0                                       # filters out anything with a frequency of 0 (so no filtering)
 
 qiime feature-table filter-samples \
-  --i-table /Users/drocean/Desktop/zuri_qiime2/18S/filtered-table.qza \
+  --i-table filtered-table.qza \
   --p-min-frequency $cutoff \
   --o-filtered-table filtered-cutoff-table    # if cutoff=0 then no filtering and there will be a "no filtering requested" error
 
