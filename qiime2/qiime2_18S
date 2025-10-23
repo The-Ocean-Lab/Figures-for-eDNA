@@ -180,7 +180,7 @@ qiime feature-table summarize \
   --i-table $table \
   --o-visualization VIEWABLE_chloroplast-mitochondria_filtered-table.qzv
                                                # viewable frequency table with new exclusions 
-cutoff=0                                       # filters out anything with a frequency of 0 (so no filtering)
+cutoff=1                                       # filters out anything with a frequency of 1 
 
 qiime feature-table filter-samples \
   --i-table filtered-table.qza \
@@ -188,7 +188,7 @@ qiime feature-table filter-samples \
   --o-filtered-table filtered-cutoff-table    # if cutoff=0 then no filtering and there will be a "no filtering requested" error
 
 cp filtered-cutoff-table.qza ancom
-mv ancom/filtered-cutoff-table ancom/filtered_feature-table.qza
+mv ancom/filtered-cutoff-table ancom/filtered-feature-table.qza
 
 
 Relative Abundance
