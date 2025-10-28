@@ -8,29 +8,30 @@ library(forcats)
 
 1.0 Import Data
 
-# delete the empty column and paste special transpose in excel (should be a site column then OTU columns)
+# delete first row in excel then transpose
+
+View(df)
 df <- rel_table
 View(df)
 
 df <- df %>%
-  mutate(across(.cols = -site, .fns = as.numeric)) # turn every column numeric except site
+  mutate(across(.cols = -sample, .fns = as.numeric)) # turn every column numeric except site
 str(df) # should output OTU columns "as numeric"
 
 2.0 Clean Data
 
 df <- df %>%
-  rename_with(~ str_replace_all(.x,";__","")) %>%
-  rename_with(~ str_replace_all(.x,"Metazoan;","")) %>%
-  rename_with(~ str_replace_all(.x,"_","")) %>%
-  rename_with(~ str_replace_all(.x,"\\.","")) 
+  rename_with(~ str_replace_all(.x,"d__Eukaryota","")) %>%
+  rename_with(~ str_replace_all(.x,";p__","")) 
 View(df) # looks through all the column names and replaces with new naming string
 
 df <- pivot_longer(
   df,
-  cols = -site,
+  cols = -sample,
   names_to = "TAXON",
   values_to = "rel_ab"
 )
+ # pivots longer so each cell becomes a datapoint, needs to be in this format for ggplot
 
 df$site <- str_replace_all(df$site, "_S(1[3-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9]|6[0-9]).gz", "")
 
@@ -41,27 +42,37 @@ df <- df %>%
   mutate(TAXON = str_replace(TAXON, ";__",""),
          TAXON = str_replace(TAXON, "_",""),
          TAXON = str_replace(TAXON, "\\;__","")
-View(df) # pivots longer so each cell becomes a datapoint, needs to be in this format for ggplot
+View(df)
 
 df <- df %>%
-  mutate(type = case_when(
-    site == "ZM_XXXXXX_C1_1" ~ "MONTH",
-    site == "ZM_XXXXXX_NR1_1" ~ "MONTH",
-    site == "ZM_XXXXXX_PR1_1" ~ "MONTH",
-    TRUE ~ "MONTH" # Default value for all other names
-  ))
+  mutate(
+    sample = case_when(
+      sample == "S25M" ~ "",
+      sample == "W25F" ~ "",
+      sample == "ZM_112024" ~ "",
+      sample == "ZM_101124" ~ "",
+      TRUE ~ sample  # keep existing values or NA for others
+    ),
+    season = case_when(
+      str_detect(sample, "S25M") ~ "spring/summer",
+      str_detect(sample, "W25F") ~ "fall/winter",
+      str_detect(sample, "ZM_112024") ~ "fall/winter",
+      str_detect(sample, "ZM_101124") ~ "fall/winter",
+      TRUE ~ NA_character_
+    )
+  )
+
+View(df)
+# the mutate part looks through the sample column for the provided string, then it creates a season column, and according to the string adds the correct season 
 
 df <- df %>%
-  mutate(site = str_replace(site, "ZM_101124_", ""),
-         site = str_replace(site, "ZM_112024_",""))
+  mutate(sample = str_replace(sample, "ZM_101124", "F24S"),
+         sample = str_replace(sample, "ZM_112024","F24N"))
 View(df) # should be correct site name and extra column with the month or season
-
-df <- df %>%
-  rename(month=type) # changes the extra column name to month (or season)
 
 df$month <- factor(df$month, levels= c("September","November"))
 
-graph <- ggplot(df, aes(x = site, y = rel_ab, fill = TAXON)) +
+graph <- ggplot(df, aes(x = sample, y = rel_ab, fill = TAXON)) +
   geom_bar(stat = "identity", position = "fill") +
   facet_wrap(~ TEMPORAL, scales = "free_x") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
