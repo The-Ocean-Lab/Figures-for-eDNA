@@ -5,6 +5,9 @@ library(tidyr)
 library(dplyr)
 library(ggplot2)
 library(forcats)
+library(stringr)
+library(RColorBrewer)
+library(randomcoloR)
 
 1.0 Import Data
 
