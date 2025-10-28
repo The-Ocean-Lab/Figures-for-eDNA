@@ -121,4 +121,21 @@ top10 <-ggplot(top10_df, aes(x = site, y = rel_ab, fill = TAXON)) +
 top10 + theme(legend.text = element_text(size = 8),  
               legend.title = element_text(size = 8)) 
 
-write.csv(df, file="/Users/zurimurph/Desktop/Ocean_Lab/code/R_Outputs/df.csv", row.names=FALSE) #ouputs df as a csv file 
+top10_df <-  tbl_df(df) %>%
+  group_by(sample) %>%
+  arrange(rel_ab, .by_group = TRUE) %>%
+  top_n(10, rel_ab)
+View(top10_df)
+
+top_10 <- ggplot(top10_df, aes(x = sample, y = rel_ab, fill = phyla)) +
+  geom_bar(stat = "identity", position = "stack") +
+  facet_wrap(~ TEMPEORAL, scales = "free_x") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Sample", y = "Relative Abundance", fill = "TAXON")  +
+  scale_fill_manual(values = colors)
+
+# if position = "fill" then the rel ab will equal 1
+
+top_10
+
+write.csv(df, file="/Users/zurimurph/Desktop/Ocean_Lab/raw_data/df.csv", row.names=FALSE) #ouputs df as a csv file 
