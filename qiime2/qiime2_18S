@@ -92,7 +92,7 @@ qiime dada2 denoise-paired \
   --p-trunc-len-f # \
   --p-trunc-len-r # \
   --o-table table.qza \
-  --o-representative-sequences rep-seqs.qza \
+  --o-representative-sequences unfiltered_rep-seqs.qza \
   --o-denoising-stats denoising-stats.qza \
   --p-n-threads 4 \
   --p-max-ee-f 2 \
@@ -111,39 +111,68 @@ qiime feature-table summarize \
   --o-visualization VIEWABLE_unfiltered_table.qzv   # shows the distrubution unique sequences and frequency in each sample
 
 qiime feature-table tabulate-seqs \
-  --i-data rep-seqs.qza \
-  --o-visualization VIEWABLE_rep-seqs.qzv           # has each unique sequence and the corresponding sequence, gives a table about average length of these seqs
+  --i-data unfiltered_rep-seqs.qza \
+  --o-visualization VIEWABLE_unfiltered_rep-seqs.qzv           # has each unique sequence and the corresponding sequence, gives a table about average length of these seqs
 
-4.1 Assigning Taxonomy
-
-qiime feature-classifier classify-sklearn \
-  --i-classifier /Users/drocean/Desktop/classifer_database_18S/silva-138-F04-R22-classifier.qza \
-  --i-reads rep-seqs.qza \
-  --p-n-jobs 4 \
-  --o-classification taxonomy.qza
+4.0 Assigning Taxonomy
 
 qiime feature-classifier classify-sklearn \
-  --i-classifier /Users/drocean/Desktop/classifer_database_18S/EUKARYOME_1_9_4/eukaryome-194-F04-R22-classifier.qza \
+  --i-classifier /Users/drocean/Desktop/classifer_database_18S/old_silva_138_0/silva-138-F04-R22-classifier.qza \
   --i-reads rep-seqs.qza \
   --p-n-jobs 4 \
-  --o-classification taxonomy.qza
+  --o-classification unfiltered_taxonomy.qza
+
                                                # use the absolute pathname of the trained database and assigns taxonomy to ASVs, silva better for microorganisms
 
 qiime metadata tabulate \
-  --m-input-file taxonomy.qza \
-  --o-visualization VIEWABLE_taxonomy.qzv      # makes viewable taxonomy file
+  --m-input-file unfiltered_taxonomy.qza \
+  --o-visualization VIEWABLE_unfiltered_taxonomy.qzv      # makes viewable taxonomy file
 
 qiime taxa barplot \
   --i-table table.qza \
+  --i-taxonomy unfiltered_taxonomy.qza \
+  --o-visualization VIEWABLE_unfiltered_taxa-bar-plots.qzv
+
+4.1 Filtering Taxonomy 
+
+qiime taxa filter-seqs \
+  --i-sequences rep-seqs.qza \
   --i-taxonomy taxonomy.qza \
-  --o-visualization VIEWABLE_taxa-bar-plots.qzv 
-                                               # viewable bar plot with relative frequencies of kingdoms
+  --p-exclude "d__Bacteria,p__Arthropoda,p__Annelida,p__Thermoplasmatota,p__Incertae_Sedis,Unassigned,p__Rotifera,p__Tunicata,p__Platyhelminthes,p__Mollusca,p__Nematozoa,p__Holozoa,p__Florideophycidae,p__Porifera,p__Xenacoelomorpha,p__Nemertea,p__Gastrotricha,p__Bryozoa,p__Vertebrata,p__uncultured,p__Phragmoplastophyta,p__Cnidaria" \
+  --o-filtered-sequences filtered-rep-seqs.qza
+
+qiime feature-classifier classify-sklearn \
+  --i-classifier /Users/drocean/Desktop/classifer_database_18S/old_silva_138_0/silva-138-F04-R22-classifier.qza \
+  --i-reads filtered-rep-seqs.qza \
+  --p-n-jobs 4 \
+  --o-classification taxonomy-filtered.qza
+
+qiime metadata tabulate \
+  --m-input-file taxonomy-filtered.qza \
+  --o-visualization VIEWABLE_taxonomy-filtered.qzv 
+
+qiime taxa filter-table \
+  --i-table table.qza \
+  --i-taxonomy unfiltered_taxonomy.qza \
+  --p-exclude "d__Bacteria,p__Arthropoda,p__Annelida,p__Thermoplasmatota,p__Incertae_Sedis,Unassigned,p__Rotifera,p__Tunicata,p__Platyhelminthes,p__Mollusca,p__Nematozoa,p__Holozoa,p__Florideophycidae,p__Porifera,p__Xenacoelomorpha,p__Nemertea,p__Gastrotricha,p__Bryozoa,p__Vertebrata,p__uncultured,p__Phragmoplastophyta,p__Cnidaria" \
+  --o-filtered-table filtered-table
+
+4.2 Visualizing Filtered Taxonomy
+
+qiime taxa barplot \
+  --i-table filtered-table.qza \
+  --i-taxonomy taxonomy-filtered.qza \
+  --o-visualization VIEWABLE_filtered_taxa-bar-plots.qzv 
+                                               # viewable bar plot with relative frequencies
+mkdir -p tax_intermediate_files
+mv unfiltered_table.qza unfiltered_taxonomy.qza VIEWABLE_rep-seqs.qzv VIEWABLE_unfiltered_table.qzv VIEWABLE_unfiltered_taxa-bar-plots.qzv VIEWABLE_unfiltered_taxonomy.qzv tax_intermediate_files
+
 5.0 Generate Tree
 
 qiime phylogeny align-to-tree-mafft-fasttree \
-  --i-sequences rep-seqs.qza \
-  --o-alignment aligned-rep-seqs.qza \
-  --o-masked-alignment masked-aligned-rep-seqs.qza \
+  --i-sequences filtered-rep-seqs.qza \
+  --o-alignment aligned-filtered-rep-seqs.qza \
+  --o-masked-alignment masked-aligned-filtered-rep-seqs.qza \
   --o-tree unrooted-tree.qza \
   --o-rooted-tree rooted-tree.qza \
   --p-n-threads 4                              # XXX what does this do 
@@ -165,7 +194,7 @@ cp mapping.csv ancom/                           # puts a copy of the mapping.csv
 
 qiime taxa filter-table \
   --i-table filtered-table.qza \
-  --i-taxonomy filtered-taxonomy.qza \
+  --i-taxonomy taxonomy-filtered.qza \
   --p-exclude mitochondria,chloroplast \
   --o-filtered-table filtered-mitochondria-chloroplast-table
                                                # filters out mitochondria and chloroplast sequences
@@ -189,7 +218,7 @@ mv ancom/filtered-cutoff-table ancom/filtered-feature-table.qza
 
 qiime taxa collapse \
   --i-table filtered-table.qza \
-  --i-taxonomy filtered-taxonomy.qza \
+  --i-taxonomy taxonomy-filtered.qza \
   --p-level 2 \
   --o-collapsed-table phyla-table.qza  
                                              # phyla can be changed to order,family,genus etc
