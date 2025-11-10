@@ -292,22 +292,23 @@ qiime diversity beta-group-significance \
   --p-pairwise
 
 qiime diversity alpha \
-  --i-table filtered-table.qza \
+  --i-table /Users/drocean/Desktop/zuri_qiime2/18S_water_10272025/rel-table/rel-phyla-table.qza \
   --p-metric chao1 \
   --o-alpha-diversity chao1.qza
 
 qiime diversity alpha \
-  --i-table filtered-table.qza \
+  --i-table /Users/drocean/Desktop/zuri_qiime2/18S_water_10272025/rel-table/rel-phyla-table.qza \
   --p-metric shannon \
   --o-alpha-diversity shannon.qza
 
 qiime diversity alpha \
-  --i-table filtered-table.qza \
+  --i-table /Users/drocean/Desktop/zuri_qiime2/18S_water_10272025/rel-table/rel-phyla-table.qza \
   --p-metric simpson \
   --o-alpha-diversity simpson.qza
 
 qiime diversity beta \
- --i-table filtered-table.qza \
+ --i-table /Users/drocean/Desktop/zuri_qiime2/18S_water_10272025/rel-table/rel-phyla-table.qza \
  --p-metric braycurtis \
  --o-distance-matrix unweighted_unifrac_distance_matrix.qza
 
+## different diversity indices using the relative phyla table as the input so this is diversity indices of phyla
