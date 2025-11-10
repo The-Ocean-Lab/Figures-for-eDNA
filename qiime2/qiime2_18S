@@ -291,3 +291,23 @@ qiime diversity beta-group-significance \
   --o-visualization core-metrics-results/unweighted-unifrac-season-significance.qzv \
   --p-pairwise
 
+qiime diversity alpha \
+  --i-table filtered-table.qza \
+  --p-metric chao1 \
+  --o-alpha-diversity chao1.qza
+
+qiime diversity alpha \
+  --i-table filtered-table.qza \
+  --p-metric shannon \
+  --o-alpha-diversity shannon.qza
+
+qiime diversity alpha \
+  --i-table filtered-table.qza \
+  --p-metric simpson \
+  --o-alpha-diversity simpson.qza
+
+qiime diversity beta \
+ --i-table filtered-table.qza \
+ --p-metric braycurtis \
+ --o-distance-matrix unweighted_unifrac_distance_matrix.qza
+
