@@ -1,0 +1,8 @@
+qiime taxa barplot \
+  --i-table filt-table.qza \
+  --i-taxonomy filt-taxonomy.qza \
+  --o-visualization VIEWABLE_filt_taxa-bar-plots.qzv 
+                                               # viewable bar plot with relative frequencies
+mkdir -p tax_intermediate_files
+mv table.qza taxonomy.qza VIEWABLE_rep-seqs.qzv VIEWABLE_table.qzv VIEWABLE_taxa-bar-plots.qzv VIEWABLE_taxonomy.qzv tax_intermediate_files
+# moves all the unfiltered files to a folder
