@@ -1,0 +1,17 @@
+Based on Wright Labs workshop 05/12/2025 and 05/13/2025
+
+2.0 Quality Check
+
+qiime demux summarize \
+  --i-data paired-end-demux.qza \
+  --o-visualization VIEWABLE_paired-end-demux.qzv
+
+                                                    # access https://view.qiime2.org/ and drag file
+                                                    # creates a file has sample id, # of forward seqs, & and # of reverse seqs
+qiime vsearch fastq-stats \
+  --i-sequences paired-end-demux.qza \
+  --p-threads 1 \
+  --o-visualization VIEWABLE_ee_paired-end-demux.qzv
+
+                                                    # creates a file quality plot for the forward and reverse reads
+                                                    # use this file to determine where to trim base pairs
