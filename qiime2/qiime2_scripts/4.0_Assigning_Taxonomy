@@ -1,5 +1,7 @@
 Based on Wright Labs workshop 05/12/2025 and 05/13/2025
 
+# go to rarefy freature table before this step to subsample data for downstream analysis  
+
 4.0 Assigning Taxonomy
 
 qiime feature-classifier classify-sklearn \
@@ -20,4 +22,3 @@ qiime taxa barplot \
   --o-visualization VIEWABLE_taxa-bar-plots.qzv
   # makes viewable bar plot 
 
-  
