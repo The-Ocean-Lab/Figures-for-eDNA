@@ -1,0 +1,33 @@
+Based on Wright Labs workshop 05/12/2025 and 05/13/2025
+
+3.0 Denoise Data
+
+qiime dada2 denoise-paired \
+  --i-demultiplexed-seqs paired-end-demux.qza \
+  --p-trim-left-f 5 \
+  --p-trim-left-r 5 \
+  --p-trunc-len-f # \
+  --p-trunc-len-r # \
+  --o-table table.qza \
+  --o-representative-sequences unfiltered_rep-seqs.qza \
+  --o-denoising-stats denoising-stats.qza \
+  --p-n-threads 4 \
+  --p-max-ee-f 2 \
+  --p-max-ee-r 2
+
+                                                    # only inputs that should be changed are p-trunc-len-f/r
+                                                    # p-trim left cuts off the first couple of bases
+                                                    # p-max-ee-f/r determines how much error is allowed
+
+qiime metadata tabulate \
+  --m-input-file denoising-stats.qza \
+  --o-visualization VIEWABLE_denoising-stats.qzv   # makes the denoising stats viewable showing how many were filtered, denoised, merged, and non-chimeric
+
+qiime feature-table summarize \
+  --i-table table.qza \
+  --o-visualization VIEWABLE_table.qzv   # shows the distrubution unique sequences and frequency in each sample
+
+qiime feature-table tabulate-seqs \
+  --i-data rep-seqs.qza \
+  --o-visualization VIEWABLE_rep-seqs.qzv           # has each unique sequence and the corresponding sequence, gives a table about average length of these seqs
+
