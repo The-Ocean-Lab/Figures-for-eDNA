@@ -1,0 +1,23 @@
+#### Merged Data File #### 
+
+# based on a qiime2 forum protocol 
+
+# Goal:
+# to create a file with qiime2 id, rep-sequence (ASV), taxonomy, confidence, and number of that seq (ASV) in each sample
+
+qiime feature-table transpose \
+  --i-table table.qza \
+  --o-transposed-feature-table transposed-table.qza
+# use filtered table for i-table if working with filtered data 
+
+qiime metadata tabulate \
+  --m-input-file rep-seqs.qza \
+  --m-input-file taxonomy.qza \
+  --m-input-file transposed-table.qza \
+  --o-visualization merged-data.qzv
+# combines the entered files together into one
+
+qiime tools export \
+  --input-path merged-data.qzv \
+  --output-path merged-data
+# makes an folder with files in it including merged data in a .tsv
