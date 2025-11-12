@@ -1,0 +1,23 @@
+Based on Wright Labs workshop 05/12/2025 and 05/13/2025
+
+4.0 Assigning Taxonomy
+
+qiime feature-classifier classify-sklearn \
+  --i-classifier classifier.qza \
+  --i-reads rep-seqs.qza \
+  --p-n-jobs 4 \
+  --o-classification taxonomy.qza
+
+                                               # use the absolute pathname of the trained database and assigns taxonomy to ASVs, silva better for microorganisms
+
+qiime metadata tabulate \
+  --m-input-file taxonomy.qza \
+  --o-visualization VIEWABLE_taxonomy.qzv      # makes viewable taxonomy file
+
+qiime taxa barplot \
+  --i-table table.qza \
+  --i-taxonomy taxonomy.qza \
+  --o-visualization VIEWABLE_taxa-bar-plots.qzv
+  # makes viewable bar plot 
+
+  
