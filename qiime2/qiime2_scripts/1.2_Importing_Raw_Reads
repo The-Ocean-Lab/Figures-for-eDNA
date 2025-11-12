@@ -1,0 +1,29 @@
+Based on Wright Labs workshop 05/12/2025 and 05/13/2025
+
+1.2 Importing Raw Reads
+
+workdir="/Users/drocean/Desktop/18S"                 
+cd "$workdir"                                        # stay in same working directory, use code if need to reset
+                                                     # open all files with gunzip before next line
+
+echo "sample-id,absolute-filepath,direction" > mapping.csv
+for f in /Users/drocean/Desktop/18S/raw_data/*_R1_001.fastq.gz; do
+  r2=${f/_R1_/_R2_}
+  if [[ -f "$r2" ]]; then
+    sample=$(basename "$f" | sed -E 's/_L001_R1_001.fastq//')
+    echo "$sample,$f,forward" >> mapping.csv
+    echo "$sample,$r2,reverse" >> mapping.csv
+  else
+    echo "Missing reverse read for $f"
+  fi
+done
+
+                                                    # correctly formats the manifest file, there should be a identical sample id name with F and R, change the working directory, check to see if files are fastq.gz or fastq, check if R1_001 or R1
+
+qiime tools import \
+  --type 'SampleData[PairedEndSequencesWithQuality]' \
+  --input-path mapping.csv \
+  --output-path paired-end-demux.qza \
+  --input-format PairedEndFastqManifestPhred33
+
+                                                    # creates a paired_end_demux.qza file which qiime can read and access
