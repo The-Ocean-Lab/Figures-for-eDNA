@@ -1,1 +1,40 @@
+Based on Wright Labs workshop 05/12/2025 and 05/13/2025
 
+1.0 Set Up
+
+# creating a working directory folder
+# create a folder called raw_data
+# move all fastq.gz / .fastq files into the raw_data folder
+
+#### activate qiime2 ####
+conda activate
+conda activate qiime2-amplicon-2025.7               # open qiime2 environment (this protocol is based on version 2025.7)
+
+1.1 Create a Mapping File
+
+#### set and go into working directory #### 
+workdir="/Users/drocean/Desktop/18S"                 # use absolute pathname of folder
+cd "$workdir"                                        # go into working directory
+ls -d "$PWD/raw_data/"                               # create a raw_data folder
+cd raw_data                                          # go into raw_data folder
+rm -f ../ids.txt                                     # removes old id.text file if there is one
+
+for f in *.fastq.gz; do
+  name=$(echo "$f" | sed -E 's/(.*)_[Rr][12].fastq.gz/\1/')
+  echo "$name" >> ../ids.txt
+done                                                 # extracts the name of the file before the underscore and a R or r, 1 or 2, and .fastq.gz change to .fastq if files are gunzipped
+                                                     # puts these extracted names in a file called ids.txt
+
+cd ..                                                # goes out of raw_data and into working directory 
+ls -d "$PWD/raw_data/"*.fastq.gz > paths.txt && paste -d "," ids.txt paths.txt > combined.csv && awk -F "," '$2 ~ /_R1/ {print $1 "," $2 ",forward"}' combined.csv > forward.csv && awk -F "," '$2 ~ /_R2/ {print $1 "," $2 ",reverse"}' combined.csv > reverse.csv
+# creates a file with all the path names for fasta.gz files
+# combines the id.txt and path.txt files            
+# adds and labels the forward reads to the combined file
+# adds and labels the reverse reads to the combined file
+
+echo "sample-id,absolute-filepath,direction" > header.csv 
+                                                     # creates a csv with sampleid, filepath and direction (just columns)
+cat header.csv forward.csv reverse.csv > mapping.csv # add the data from each file to the appropiate column
+mkdir -p import_intermediate_files                   # makes a file in working directory called intermediate files
+mv paths.txt combined.csv forward.csv reverse.csv header.csv import_intermediate_files 
+                                                     # puts the listed files into the intermediate files folder
