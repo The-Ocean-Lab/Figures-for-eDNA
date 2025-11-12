@@ -1,6 +1,6 @@
 Based on Wright Labs workshop 05/12/2025 and 05/13/2025
 
-1.2 Importing Raw Reads
+1.1 Importing Raw Reads
 
 workdir="/Users/drocean/Desktop/18S"                 
 cd "$workdir"                                        # stay in same working directory, use code if need to reset
