@@ -1,0 +1,25 @@
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity core-metrics-results/faith_pd_vector.qza \
+  --m-metadata-file metadata.tsv \
+  --o-visualization core-metrics-results/faith-pd-group-significance.qzv
+
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity core-metrics-results/evenness_vector.qza \
+  --m-metadata-file metadata.tsv \ 
+  --o-visualization core-metrics-results/evenness-group-significance.qzv
+
+qiime diversity beta-group-significance \
+  --i-distance-matrix core-metrics-results/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file metadata.tsv \
+  --m-metadata-column XXX \
+  --o-visualization core-metrics-results/unweighted-unifrac-site-significance.qzv \
+  --p-pairwise
+
+qiime diversity beta-group-significance \
+  --i-distance-matrix core-metrics-results/unweighted_unifrac_distance_matrix.qza \
+  --m-metadata-file metadata.tsv \
+  --m-metadata-column XXX \
+  --o-visualization core-metrics-results/unweighted-unifrac-season-significance.qzv \
+  --p-pairwise
+
+  # for the XXX choose a variable from your meta data column (ie Site, Season)
