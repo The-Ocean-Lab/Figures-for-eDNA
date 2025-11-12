@@ -1,0 +1,34 @@
+Based on Wright Labs workshop 05/12/2025 and 05/13/2025
+
+mkdir alpha_div
+mkdir beta_div
+mkdir R
+mkdir ancom                                    # makes folder with all these titles
+
+
+cp mapping.csv alpha_div/
+cp mapping.csv beta_div/
+cp mapping.csv R/
+cp mapping.csv ancom/                           # puts a copy of the mapping.csv in each folder
+
+
+qiime taxa filter-table \
+  --i-table table.qza \
+  --i-taxonomy taxonomy.qza \
+  --p-exclude mitochondria,chloroplast \
+  --o-filtered-table filtered-mitochondria-chloroplast-table
+                                               # filters out mitochondria and chloroplast sequences
+
+qiime feature-table summarize \
+  --i-table filtered-mitochondria-chloroplast-table.qza \
+  --o-visualization VIEWABLE_chloroplast-mitochondria_filtered-table.qzv
+                                               # viewable frequency table with new exclusions 
+cutoff=1                                       # filters out anything with a frequency of 1 
+
+qiime feature-table filter-samples \
+  --i-table filtered-mitochondria-chloroplast-table.qza \
+  --p-min-frequency $cutoff \
+  --o-filtered-table filtered-cutoff-table    # if cutoff=0 then no filtering and there will be a "no filtering requested" error
+
+cp filtered-cutoff-table.qza ancom
+mv ancom/filtered-cutoff-table ancom/filtered-feature-table.qza
