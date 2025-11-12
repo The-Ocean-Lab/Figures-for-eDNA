@@ -1,0 +1,20 @@
+8.0 Alpha Rarefraction
+
+# pull up VIEWABLE_chloroplast-mitochondria_filtered-table.qzv then interactive sample detail as a guide to determine the subsampling depth
+# saving mapping file as a tsv with sample id, year, month, date, season, site, replicate, forward path, and reverse path
+# move copy of metadata into alpha_div folder
+
+metadata="pathname/metadata.tsv"
+
+cp filtered-cutoff-table.qza alpha_div       # puts a copy of filtered-cutoff-table into alpha_div folder
+
+qiime diversity alpha-rarefaction \
+  --i-table filtered-cutoff-table.qza \
+  --i-phylogeny rooted-tree.qza \
+  --p-max-depth # \
+  --m-metadata-file metadata \
+  --o-visualization alpha-rarefaction.qzv    # choose --p-max-depth based on freq summary
+
+# download shannon diversity, observed_features, and faith_pd as a csv and put a copy in R folder and alpha_div
+
+mv alpha-rarefaction.qzv alpha_div           # moves alpha-rarefraction.qzv to alpha div
