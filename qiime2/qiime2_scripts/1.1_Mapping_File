@@ -294,21 +294,21 @@ qiime diversity beta-group-significance \
 qiime diversity alpha \
   --i-table rel-phyla-table.qza \
   --p-metric chao1 \
-  --o-alpha-diversity chao1.qza
+  --o-alpha-diversity phyla-chao1.qza
 
 qiime diversity alpha \
   --i-table rel-phyla-table.qza \
   --p-metric shannon \
-  --o-alpha-diversity shannon.qza
+  --o-alpha-diversity phyla-shannon.qza
 
 qiime diversity alpha \
   --i-table rel-phyla-table.qza \
   --p-metric simpson \
-  --o-alpha-diversity simpson.qza
+  --o-alpha-diversity phyla-simpson.qza
 
 qiime diversity beta \
  --i-table rel-phyla-table.qza \
  --p-metric braycurtis \
- --o-distance-matrix unweighted_unifrac_distance_matrix.qza
+ --o-distance-matrix phyla-unweighted_unifrac_distance_matrix.qza
 
 ## different diversity indices using the relative phyla table as the input so this is diversity indices of phyla, different tables (class, order etc)               
