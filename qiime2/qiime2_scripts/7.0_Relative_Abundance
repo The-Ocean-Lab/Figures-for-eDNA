@@ -1,0 +1,21 @@
+7.0 Relative Abundance
+
+qiime taxa collapse \
+  --i-table table.qza \
+  --i-taxonomy taxonomy.qza \
+  --p-level 2 \
+  --o-collapsed-table phyla-table.qza 
+# phylum=2, class=3, order=4 and so on
+
+qiime feature-table relative-frequency \
+--i-table phyla-table.qza \
+--o-relative-frequency-table rel-phyla-table.qza
+                                             # creates the abundance percents
+qiime tools export \
+  --input-path rel-phyla-table.qza \
+  --output-path rel-table                    # creates a folder called rel-table and puts the folder in there
+
+cp rel-phyla-table.qza rel-table
+cd rel-table                                 # goes into rel-table folder
+biom convert -i feature-table.biom -o rel-phyla-table.tsv --to-tsv
+                                             # converts into a .tsv file
