@@ -1,1 +1,29 @@
+4.1 Filtering Taxonomy 
 
+qiime taxa filter-seqs \
+  --i-sequences rep-seqs.qza \
+  --i-taxonomy taxonomy.qza \
+  --p-exclude "d__Bacteria,p__Arthropoda" \
+  --o-filtered-sequences filt-rep-seqs.qza
+# two examples are provided, use bar plot to understand what you want to filter and copy straight from qiime2 bar plot
+# --p-exclude "x,y,z" or --p-include "x,y,z" can be used to filter 
+# the new filtered-rep-seqs file will be used to do the same thing as 4.0 Assigning Taxonomy
+
+qiime feature-classifier classify-sklearn \
+  --i-classifier classifier.qza \
+  --i-reads filt-rep-seqs.qza \
+  --p-n-jobs 4 \
+  --o-classification filt-taxonomy.qza
+
+qiime metadata tabulate \
+  --m-input-file filt-taxonomy.qza \
+  --o-visualization VIEWABLE_filt-taxonomy.qzv 
+
+qiime taxa filter-table \
+  --i-table table.qza \
+  --i-taxonomy taxonomy.qza \
+  --p-exclude "d__Bacteria,p__Arthropoda" \
+  --o-filtered-table filt-table
+
+# use these files filt-rep-seqs, filt-taxonomy, filt-table for all downstream analysis 
+# whenever you see rep-seq, taxonomy, or table as inputs use filtered instead
