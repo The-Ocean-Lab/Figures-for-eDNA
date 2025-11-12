@@ -1,0 +1,15 @@
+Based on Wright Labs workshop 05/12/2025 and 05/13/2025
+
+5.0 Generate Tree
+
+qiime phylogeny align-to-tree-mafft-fasttree \
+  --i-sequences rep-seqs.qza \
+  --o-alignment aligned-rep-seqs.qza \
+  --o-masked-alignment masked-aligned-rep-seqs.qza \
+  --o-tree unrooted-tree.qza \
+  --o-rooted-tree rooted-tree.qza \
+  --p-n-threads 4                              
+
+# creates file for phylogenetic diversity metrics
+# uses mafft program to perform a multiple sequence alignment of the sequences
+# pipeline applies FastTree to generate a phylogenetic tree from the masked alignment
