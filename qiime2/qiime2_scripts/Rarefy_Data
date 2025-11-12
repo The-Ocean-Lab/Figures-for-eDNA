@@ -1,0 +1,8 @@
+# Create a rarefy freature table for downstream analysis in R 
+
+qiime feature-table rarefy \
+  --i-table table.qza \
+  --p-sampling-depth XXX \
+  --o-rarefied-table rarefied-table.qza
+
+# XXX should be choosen based on sample with the least amount of frequencies
