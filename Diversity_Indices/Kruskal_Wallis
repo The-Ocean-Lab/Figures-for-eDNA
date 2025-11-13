@@ -1,0 +1,456 @@
+library(tidyverse)
+library(openxlsx)
+
+set.seed(310)
+fwmay_cons_taxonomy<-fwmay_cons_taxonomy%>%rename_with(tolower)%>%
+mutate(taxonomy=str_replace_all(string=taxonomy, pattern="\\(\\d*\\)", replacement=""))%>%
+  separate(taxonomy, into=c("kingdom", "phylum", "class", "order", "family", "genus"), sep=";")
+ 
+  
+  # filter(str_detect(taxonomy, pattern="\\(")) %>%
+  #select(taxonomy) #filter to check if i deleted them all
+
+  
+
+#strip chart or box plot showing relative abundances
+#using subsampled data we are going to do our normal rel_abund pipeline
+
+otu_data<-fwmay_opti_mcc_0_03_subsample%>%select(-label, -numOtus) %>%
+  rename(sample=Group) %>%
+  pivot_longer(cols=-sample, names_to="otu", values_to="count")
+
+otu_data %>% group_by(sample) %>% summarize(n=sum(count)) %>% summary()
+#n=400 because our subsampled data all is equal to 400 sequences in each sample
+
+otu_data<-otu_data%>% mutate(rel_abund=count/400)
+#join together metadata, otu_data, and taxonomy data
+#we’ll aggregate the relative abundance values for each subject and those OTUs that belong to each phylum.
+
+otu_data%>%
+  group_by(sample)%>%
+  summarize(total=sum(rel_abund))
+#checked if all relabund equalled to 1 and they do! yippee!
+
+
+
+agg_phylum_data <- inner_join(otu_data, fwmay_cons_taxonomy) %>%
+  group_by(sample, phylum) %>%
+  summarize(agg_rel_abund=sum(rel_abund))
+#this makes the data smaller and neat so I can join it all together without breaking my SHIT!!!
+
+Sites<-Sites%>%rename(sample=group)
+
+agg_phylum_data <- inner_join(otu_data, fwmay_cons_taxonomy) %>%
+  group_by(sample, phylum) %>%
+  summarize(agg_rel_abund=sum(rel_abund))%>%
+  inner_join(., Sites) %>%
+  ungroup() #without this, the sample and phylum columns remain grouped
+  
+#I’m curious what the median relative abundances are for each phylum. 
+#I suspect that there are some phyla that are super rare that I probably don’t want to include on a boxplot.
+
+agg_phylum_data %>%
+  group_by(phylum) %>%
+  summarize(median=median(agg_rel_abund)) %>%
+  arrange((desc(median)))
+#5 most abundant are Pseudomonadota, Bacteria_unclassified, Chloroflexota, Bacteroidota, Acidobacteriota  
+
+top_phyla <- agg_phylum_data %>%
+  group_by(phylum) %>%
+  summarize(median=median(agg_rel_abund)) %>%
+  arrange((desc(median))) %>% # keep this so that the phyla are sorted properly
+  top_n(6, median) %>%
+  pull(phylum) # use pull to convert the names from a data frame to a vector of names
+
+#Make boxplot of 5 most abundant phyla
+agg_phylum_data %>%
+  filter(phylum %in% top_phyla) %>%
+  ggplot(aes(x=phylum, y=agg_rel_abund, color=month)) +
+  geom_boxplot()
+
+agg_phylum_data %>%
+  filter(phylum %in% top_phyla) %>%
+  group_by(sample)%>%
+  summarize(total=sum(agg_rel_abund))
+#doesnt equal 1 anymore so the graph doesnt have a y axis that ends at 1.00 why?
+
+
+#use factors to line them up in the same way that theyre lined up in the file
+agg_phylum_data %>%
+  filter(phylum %in% top_phyla) %>%
+  mutate(phylum=factor(phylum, levels=top_phyla)) %>%
+  ggplot(aes(x=phylum, y=agg_rel_abund, color=month)) +
+  geom_boxplot()+
+  labs(title="Phlyum level relative abundance",
+                      x=NULL,
+                      y="Relative abundance") +
+  scale_y_continuous(limits = c(0, 1)) +  # <-- force y-axis from 0 to 1
+  theme_classic()
+ 
+ #since most things are close to the bottom it might be helpful to use log-scaled-y axis
+#putting relative abundance in percent
+
+#im also setting a max value so i can have the graph have the upper bound of 64.5% cuz thats the max
+
+max_val <- agg_phylum_data %>%
+  filter(phylum %in% top_phyla) %>%
+  summarize(max_abund = max(agg_rel_abund) * 100) %>%
+  pull(max_abund)
+
+agg_phylum_data %>%
+  filter(phylum %in% top_phyla) %>%
+  mutate(phylum=factor(phylum, levels=top_phyla)) %>%
+  ggplot(aes(x=phylum, y=agg_rel_abund, color=season)) +
+  geom_boxplot() +
+  scale_color_manual(name=NULL,
+                     values=c("red", "blue"),
+                     breaks=c("Fall/Winter", "Spring/Summer"),
+                     labels=c("Fall/Winter", "Spring/Summer")) +
+  labs(title="There are no obvious phylum-level differences between the\ndiagnosis groups",
+       x=NULL,
+       y="Relative abundance") +
+  theme_classic()
+
+
+
+#my graph y axis doesnt reach 100% so i am checking the max
+
+agg_phylum_data %>%
+  filter(phylum %in% top_phyla) %>%
+  summarize(max_rel_abund = max(agg_rel_abund) * 100)
+# 64.5
+
+#the top 6 phyla together account for 64.5% on average, then the remaining 
+#~35.5% is spread across the many rare phyla im not plotting.
+
+##############################################################################
+
+#as deep as possible? lets see what he means
+
+deep_taxonomy <- deep_taxonomy%>%
+  rename_all(tolower) %>%
+  mutate(taxonomy=str_replace_all(string=taxonomy, pattern="\\(\\d*\\)", replacement="")) %>%
+  mutate(taxonomy=str_replace_all(string=taxonomy, pattern=";$", replacement="")) %>%
+ separate(taxonomy, into=c("kingdom", "phylum", "class", "order", "family", "genus"), sep=";")
+
+#describes the cons_taxonomy to the highest it can be classified whether its genera or whatever
+
+
+
+agg_deep_data <- inner_join(otu_data, deep_taxonomy) %>%
+  group_by(sample, family) %>%
+  summarize(agg_rel_abund=sum(rel_abund)) %>%
+  inner_join(., Sites) %>%
+  ungroup() #without this, the sample and phylum columns remain grouped
+
+top_deep_taxa <- agg_deep_data %>%
+  group_by(family) %>%
+  summarize(median=median(agg_rel_abund)) %>%
+  arrange((desc(median))) %>% # keep this so that the phyla are sorted properly
+  top_n(10, median) %>%
+  pull(family) # use pull to convert the names from a data frame to a vector of names
+
+agg_deep_data %>%
+  filter(taxonomy %in% top_deep_taxa) %>%
+  mutate(taxonomy=factor(taxonomy, levels=top_deep_taxa))%>%
+  mutate(agg_rel_abund=agg_rel_abund+1/500) %>%
+  ggplot(aes(x=taxonomy, y=agg_rel_abund, color=season)) +
+  geom_boxplot() +
+  geom_hline(yintercept=1/500, color="gray") +
+  scale_color_manual(name=NULL,
+                     values=c("red", "blue"),
+                     breaks=c("Fall/Winter", "Spring/Summer"),
+                     labels=c("Fall/Winter", "Spring/Summer")) +
+  labs(title="Deepest level relative abundance",
+       x=NULL,
+       y="Relative abundance (%)") +
+  scale_y_continuous(limits = c(0, 1)) +  # <-- force y-axis from 0 to 1
+  theme_classic()
+
+agg_deep_data %>%
+  group_by(taxonomy) %>%
+  summarize(median=median(agg_rel_abund)) %>%
+  arrange((desc(median)))
+
+
+
+
+
+###########################
+#hypothesis testing
+
+library(broom)
+library(purrr)
+
+phylum_tests_site<- agg_phylum_data %>%
+  nest(sample_data = c(-phylum)) %>%
+  mutate(test=map(sample_data, ~tidy(kruskal.test(agg_rel_abund~site, data=.)))) %>%
+  unnest(test)
+
+phylum_tests_season <- agg_phylum_data %>%
+  nest(sample_data = c(-phylum)) %>%
+  mutate(test=map(sample_data, ~tidy(kruskal.test(agg_rel_abund~season, data=.)))) %>%
+  unnest(test)
+
+
+phylum_tests_fixed_site <- agg_phylum_data %>%
+  nest(sample_data = c(-phylum)) %>%
+  mutate(test=map(sample_data, ~tidy(kruskal.test(agg_rel_abund~site, data=.)))) %>%
+  unnest(test) %>%
+  mutate(p.value.adj=p.adjust(p.value, method="BH")) %>%
+  arrange(p.value.adj)
+
+phylum_tests_fixed_season <- agg_phylum_data %>%
+  nest(sample_data = c(-phylum)) %>%
+  mutate(test=map(sample_data, ~tidy(kruskal.test(agg_rel_abund~season, data=.)))) %>%
+  unnest(test) %>%
+  mutate(p.value.adj=p.adjust(p.value, method="BH")) %>%
+  arrange(p.value.adj)
+
+sig_phyla_season <- phylum_tests_fixed_season %>%
+  filter(p.value.adj <= 0.05) %>%
+  pull(phylum)
+
+
+sig_phyla_season_site <- phylum_tests_fixed_site %>%
+  filter(p.value.adj <= 0.05) %>%
+  pull(phylum)
+
+
+
+###############################################################################
+
+
+fwmay_cons_taxonomy<-fwmay_cons_taxonomy%>%rename_with(tolower)%>%
+  mutate(taxonomy=str_replace_all(string=taxonomy, pattern="\\(\\d*\\)", replacement=""))%>%
+  separate(taxonomy, into=c("kingdom", "phylum", "class", "order", "family", "genus"), sep=";")
+
+
+# filter(str_detect(taxonomy, pattern="\\(")) %>%
+#select(taxonomy) #filter to check if i deleted them all
+
+
+
+#strip chart or box plot showing relative abundances
+#using subsampled data we are going to do our normal rel_abund pipeline
+
+otu_data_NOT<-fwmay_opti_mcc%>%select(-label, -numOtus) %>%
+  rename(sample=Group) %>%
+  pivot_longer(cols=-sample, names_to="otu", values_to="count")
+#calculate relative abundance
+
+otu_data_NOT %>% group_by(sample) %>% summarize(n=sum(count)) %>% summary()
+
+
+otu_data_NOT<-otu_data%>% mutate(rel_abund=count/sum(count))
+
+
+otu_data_NOT%>%
+  group_by(sample)%>%
+  summarize(total=sum(rel_abund))
+#checked if all relabund equalled to 1 and they do! yippee!
+
+
+otu_data_NOT <- inner_join(otu_data, fwmay_cons_taxonomy) %>%
+  group_by(sample, phylum) %>%
+  summarize(agg_rel_abund=sum(rel_abund)) %>%
+  inner_join(., Sites) %>%
+  ungroup() #without this, the sample and phylum columns remain grouped
+
+
+#############################################
+#Same but deep
+
+
+deep_phylum_tests_month<- agg_deep_data%>%
+  nest(sample_data = c(-family)) %>%
+  mutate(test=map(sample_data, ~tidy(kruskal.test(agg_rel_abund~month, data=.)))) %>%
+  unnest(test)
+
+deep_phylum_tests_season <- agg_deep_data%>%
+  nest(sample_data = c(-family)) %>%
+  mutate(test=map(sample_data, ~tidy(kruskal.test(agg_rel_abund~sample, data=.)))) %>%
+  unnest(test)
+
+
+deep_phylum_tests_fixed_month <- agg_deep_data%>%
+  nest(sample_data = c(-family)) %>%
+  mutate(test=map(sample_data, ~tidy(kruskal.test(agg_rel_abund~month, data=.)))) %>%
+  unnest(test) %>%
+  mutate(p.value.adj=p.adjust(p.value, method="BH")) %>%
+  arrange(p.value.adj)
+
+deep_phylum_tests_fixed_season <- agg_deep_data %>%
+  nest(sample_data = c(-family)) %>%
+  mutate(test=map(sample_data, ~tidy(kruskal.test(agg_rel_abund~sample, data=.)))) %>%
+  unnest(test) %>%
+  mutate(p.value.adj=p.adjust(p.value, method="BH")) %>%
+  arrange(p.value.adj)
+
+deep_sig_phyla_season <- deep_phylum_tests_fixed_season %>%
+  filter(p.value.adj <= 0.05) %>%
+  pull(family)
+
+
+deep_sig_phyla_season_month <- deep_phylum_tests_fixed_month %>%
+  filter(p.value.adj <= 0.05) %>%
+  pull(family)
+
+
+
+###############################################################################
+
+
+fwmay_cons_taxonomy<-fwmay_cons_taxonomy%>%rename_with(tolower)%>%
+  mutate(taxonomy=str_replace_all(string=taxonomy, pattern="\\(\\d*\\)", replacement=""))%>%
+  separate(taxonomy, into=c("kingdom", "phylum", "class", "order", "family", "genus"), sep=";")
+
+
+# filter(str_detect(taxonomy, pattern="\\(")) %>%
+#select(taxonomy) #filter to check if i deleted them all
+
+
+
+#strip chart or box plot showing relative abundances
+#using subsampled data we are going to do our normal rel_abund pipeline
+
+otu_data_NOT<-fwmay_opti_mcc%>%select(-label, -numOtus) %>%
+  rename(sample=Group) %>%
+  pivot_longer(cols=-sample, names_to="otu", values_to="count")
+#calculate relative abundance
+
+otu_data_NOT %>% group_by(sample) %>% summarize(n=sum(count)) %>% summary()
+
+
+otu_data_NOT<-otu_data%>% mutate(rel_abund=count/sum(count))
+
+
+otu_data_NOT%>%
+  group_by(sample)%>%
+  summarize(total=sum(rel_abund))
+#checked if all relabund equalled to 1 and they do! yippee!
+
+
+otu_data_NOT <- inner_join(otu_data, fwmay_cons_taxonomy) %>%
+  group_by(sample, phylum) %>%
+  summarize(agg_rel_abund=sum(rel_abund)) %>%
+  inner_join(., Sites) %>%
+  ungroup() #without this, the sample and phylum columns remain grouped
+
+
+
+
+
+
+
+
+
+
+ %>%
+  nest(sample_data = c(-phylum)) %>%
+  mutate(test=map(sample_data, ~tidy(kruskal.test(agg_rel_abund~site, data=.)))) %>%
+  unnest(test)
+
+phylum_tests_season <- agg_phylum_data %>%
+  nest(sample_data = c(-phylum)) %>%
+  mutate(test=map(sample_data, ~tidy(kruskal.test(agg_rel_abund~season, data=.)))) %>%
+  unnest(test)
+
+
+phylum_tests_fixed_site <- agg_phylum_data %>%
+  nest(sample_data = c(-phylum)) %>%
+  mutate(test=map(sample_data, ~tidy(kruskal.test(agg_rel_abund~site, data=.)))) %>%
+  unnest(test) %>%
+  mutate(p.value.adj=p.adjust(p.value, method="BH")) %>%
+  arrange(p.value.adj)
+
+phylum_tests_fixed_season <- agg_phylum_data %>%
+  nest(sample_data = c(-phylum)) %>%
+  mutate(test=map(sample_data, ~tidy(kruskal.test(agg_rel_abund~season, data=.)))) %>%
+  unnest(test) %>%
+  mutate(p.value.adj=p.adjust(p.value, method="BH")) %>%
+  arrange(p.value.adj)
+
+sig_phyla_season <- phylum_tests_fixed_season %>%
+  filter(p.value.adj <= 0.05) %>%
+  pull(phylum)
+
+
+sig_phyla_season_site <- phylum_tests_fixed_site %>%
+  filter(p.value.adj <= 0.05) %>%
+  pull(phylum)
+
+
+
+###############################################################################
+
+
+fwmay_cons_taxonomy<-fwmay_cons_taxonomy%>%rename_with(tolower)%>%
+  mutate(taxonomy=str_replace_all(string=taxonomy, pattern="\\(\\d*\\)", replacement=""))%>%
+  separate(taxonomy, into=c("kingdom", "phylum", "class", "order", "family", "genus"), sep=";")
+
+
+# filter(str_detect(taxonomy, pattern="\\(")) %>%
+#select(taxonomy) #filter to check if i deleted them all
+
+
+
+#strip chart or box plot showing relative abundances
+#using subsampled data we are going to do our normal rel_abund pipeline
+
+otu_data_NOT<-fwmay_opti_mcc%>%select(-label, -numOtus) %>%
+  rename(sample=Group) %>%
+  pivot_longer(cols=-sample, names_to="otu", values_to="count")
+#calculate relative abundance
+
+otu_data_NOT %>% group_by(sample) %>% summarize(n=sum(count)) %>% summary()
+
+
+otu_data_NOT<-otu_data%>% mutate(rel_abund=count/sum(count))
+
+
+otu_data_NOT%>%
+  group_by(sample)%>%
+  summarize(total=sum(rel_abund))
+#checked if all relabund equalled to 1 and they do! yippee!
+
+
+otu_data_NOT <- inner_join(otu_data, fwmay_cons_taxonomy) %>%
+  group_by(sample, phylum) %>%
+  summarize(agg_rel_abund=sum(rel_abund)) %>%
+  inner_join(., Sites) %>%
+  ungroup() #without this, the sample and phylum columns remain grouped
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
