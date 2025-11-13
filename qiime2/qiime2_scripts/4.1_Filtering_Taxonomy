@@ -24,6 +24,8 @@ qiime taxa filter-table \
   --i-taxonomy taxonomy.qza \
   --p-exclude "d__Bacteria,p__Arthropoda" \
   --o-filtered-table filt-table
+# the taxonomy and table files should be filtered in the same way
+
 
 # use these files filt-rep-seqs, filt-taxonomy, filt-table for all downstream analysis 
 # whenever you see rep-seq, taxonomy, or table as inputs use filtered instead
