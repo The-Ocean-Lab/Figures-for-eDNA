@@ -5,4 +5,4 @@ qiime feature-table rarefy \
   --p-sampling-depth XXX \
   --o-rarefied-table rarefied-table.qza
 
-# XXX should be choosen based on sample with the least amount of frequencies
+# XXX should be choosen based on sample with the least amount of sequences (freq) present
