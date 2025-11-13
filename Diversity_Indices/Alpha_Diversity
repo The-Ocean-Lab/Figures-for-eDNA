@@ -1,1 +1,722 @@
+library(tidyverse)
+library(openxlsx)
+
+set.seed(1)
+fwmay_cons_taxonomy<-fwmay_cons_taxonomy %>% rename_all(tolower)
+
+fwmay_cons_taxonomy %>%
+  #mutate(taxonomy=str_replace_all(string=taxonomy, pattern="\\(100\\)", replacement="")) %>%
+  filter(str_detect(taxonomy, pattern="\\(")) %>%
+  select(taxonomy)
+
+
+
+
+
+#remove parenthesis and numbers between them 
+
+fwmay_cons_taxonomy<- fwmay_cons_taxonomy %>%
+  mutate(taxonomy=str_replace_all(string=taxonomy, pattern="\\(\\d*\\)", replacement=""))%>%
+mutate(taxonomy=str_replace_all(string=taxonomy, pattern=";$", replacement="")) %>%
+  separate(taxonomy, into=c("kingdom", "phylum", "class", "order", "family", "genus"), sep=";")
+## # A tibble: 9,467 x 8
+
+#strip chart or box plot showing relative abundances
+#using subGroupd data we are going to do our normal rel_abund pipeline
+
+otu_data <- read_tsv("C:/Users/Pinel/OneDrive - my.hamptonu.edu/R code/final files/fwmay.opti_mcc.0.03.subsample.shared",col_types=cols(Group=col_character()))%>%
+  select(-label, -numOtus) %>%     # now lowercase names here too    # group now exists (lowercase)
+  pivot_longer(cols = -Group, names_to = "otu", values_to = "count")
+  
+
+
+otu_data %>% group_by(Group) %>% summarize(n=sum(count)) %>% summary()
+#n=400 because our subGroupd data all is equal to 400 sequences in each Group
+
+otu_data<-otu_data%>% mutate(rel_abund=count/400)
+#join together metadata, otu_data, and taxonomy data
+#we’ll aggregate the relative abundance values for each subject and those OTUs that belong to each genus.
+
+otu_data%>%
+  group_by(Group)%>%
+  summarize(total=sum(rel_abund))
+#checked if all relabund equalled to 1 and they do! yippee!
+
+
+agg_phylum_data <- inner_join(otu_data, fwmay_cons_taxonomy) %>%
+  group_by(Group, phylum) %>%
+  summarize(agg_rel_abund=sum(rel_abund))
+#this makes the data smaller and neat so I can join it all together without breaking my SHIT!!!
+
+
+agg_phylum_data <- inner_join(otu_data, fwmay_cons_taxonomy) %>%
+  group_by(Group, phylum) %>%
+  summarize(agg_rel_abund=sum(rel_abund))%>%
+  rename_all(tolower)%>%
+  inner_join(., Sites) %>%
+  ungroup() #without this, the Group and genus columns remain grouped
+  
+#I’m curious what the median relative abundances are for each genus. 
+#I suspect that there are some phyla that are super rare that I probably don’t want to include on a boxplot.
+
+
+agg_phylum_data %>%
+  group_by(phylum) %>%
+  summarize(mean=mean(agg_rel_abund)) %>%
+  arrange(desc(mean))
+#5 most abundant are Pseudomonadota, Bacteria_unclassified, Chloroflexota, Bacteroidota, Acidobacteriota  
+
+  phylum                  mean
+   <chr>                   <dbl>
+ 1 Pseudomonadota        0.553  
+ 2 Bacteria_unclassified 0.162  
+ 3 Chloroflexota         0.0518 
+ 4 Bacteroidota          0.0508 
+ 5 Acidobacteriota       0.0354 
+ 6 Cyanobacteriota       0.0285 
+ 7 Planctomycetota       0.0267 
+ 8 Archaea_unclassified  0.0146 
+ 9 Actinomycetota        0.0108 
+10 Calditrichota         0.00884
+
+#This is for fall/winter and may
+
+
+agg_phylum_data %>%
+  group_by(group)%>%
+  summarize(total=sum(agg_rel_abund))
+  
+Still equals 1 baby!!!!!!!!!!!1
+
+
+#I wanna seewhat OTU ismost abundant
+agg_otu_phylum<-agg_phylum_data %>%
+  group_by(otu,phylum) %>%
+  summarise(agg_rel_abund = mean(agg_rel_abund), .groups = "drop") %>%
+  group_by(site) %>%
+  mutate(perlabund = 100 * agg_rel_abund/sum(agg_rel_abund))%>%
+  ungroup()
+
+
+mp_genus %>%
+  group_by(site) %>%
+  summarise(total = sum(perlabund))
+#it euals 100%???? how?????
+
+mp_genus%>%
+  group_by(genus)%>%
+  summarize(max=max(perlabund))%>%
+  arrange(desc(max)) #its good, not OTU aggregated luckily
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+_________________________________
+#Now lets do just fall/winter
+
+fwmay_cons_taxonomy<-fwmay_cons_taxonomy %>% rename_all(tolower)
+
+#remove parenthesis and numbers between them 
+
+fwmay_cons_taxonomy<- fwmay_cons_taxonomy %>%
+  mutate(taxonomy=str_replace_all(string=taxonomy, pattern="//(//d*//)", replacement="")) %>%
+  mutate(taxonomy=str_replace_all(string=taxonomy, pattern=";$", replacement="")) %>%
+  separate(taxonomy, into=c("kingdom", "genus", "class", "order", "family", "genus"), sep=";")
+## # A tibble: 9,467 x 8
+
+#strip chart or box plot showing relative abundances
+#using subGroupd data we are going to do our normal rel_abund pipeline
+
+otu_data <- read_tsv("C:/Users/Pinel/OneDrive - my.hamptonu.edu/R code/final files/fwmay.opti_mcc.0.03.subsample.shared",col_types=cols(Group=col_character()))%>%
+  select(-label, -numOtus) %>%     # now lowercase names here too    # group now exists (lowercase)
+  pivot_longer(cols = -Group, names_to = "otu", values_to = "count")
+
+
+
+otu_data %>% group_by(Group) %>% summarize(n=sum(count)) %>% summary()
+#n=400 because our subGroupd data all is equal to 400 sequences in each Group
+
+otu_data<-otu_data%>% mutate(rel_abund=count/400)
+#join together metadata, otu_data, and taxonomy data
+#we’ll aggregate the relative abundance values for each subject and those OTUs that belong to each genus.
+
+otu_data%>%
+  group_by(group)%>%
+  summarize(total=sum(rel_abund))
+#checked if all relabund equalled to 1 and they do! yippee!
+
+
+agg_phylum_data <- inner_join(otu_data, fwmay_cons_taxonomy) %>%
+  group_by(group, phylum) %>%
+  summarize(agg_rel_abund=sum(rel_abund))
+#this makes the data smaller and neat so I can join it all together without breaking my SHIT!!!
+
+
+agg_phylum_data <- inner_join(otu_data, fwmay_cons_taxonomy) %>%
+  group_by(group, phylum) %>%
+  summarize(agg_rel_abund=sum(rel_abund))%>%
+  rename_all(tolower)%>%
+  inner_join(., Sites) %>%
+  ungroup() #without this, the Group and genus columns remain grouped
+
+#I’m curious what the median relative abundances are for each genus. 
+#I suspect that there are some phyla that are super rare that I probably don’t want to include on a boxplot.
+
+fall <- agg_phylum_data%>%
+  filter(season == "Fall/Winter")
+phylum                  mean
+<chr>                  <dbl>
+1 Pseudomonadota        0.559 
+2 Bacteria_unclassified 0.156 
+3 Chloroflexota         0.0537
+4 Bacteroidota          0.0489
+5 Acidobacteriota       0.0355
+6 Cyanobacteriota       0.0307
+7 Planctomycetota       0.0276
+8 Archaea_unclassified  0.0135
+9 Actinomycetota        0.0119
+10 Calditrichota         0.0086
+
+Spring<-agg_phylum_data%>%
+  filter(season == "Spring/Summer")
+
+phylum                  mean
+<chr>                  <dbl>
+1 Pseudomonadota        0.506 
+2 Bacteria_unclassified 0.214 
+3 Bacteroidota          0.0667
+4 Chloroflexota         0.0358
+5 Acidobacteriota       0.0342
+6 Archaea_unclassified  0.0242
+7 Planctomycetota       0.0192
+8 Euryarchaeota         0.0117
+9 Calditrichota         0.0108
+10 Cyanobacteriota       0.01  
+
+
+
+fall%>%
+  group_by(phylum) %>%
+  summarize(mean=mean(agg_rel_abund)) %>%
+  arrange(desc(mean))
+#6 most abundant are Pseudomonadota, Bacteria_unclassified, Chloroflexota, Bacteroidota, Acidobacteriota, Cyanobacteriota 
+
+Spring%>%
+  group_by(phylum) %>%
+  summarize(mean=mean(agg_rel_abund)) %>%
+  arrange(desc(mean))
+
+#In May Cyanos drops to .01 but thats probably because theres not as many months of data
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+__________I am going to make relative abundance stacked bar chart from here__________
+
+
+top_phyla <- agg_phylum_data %>%
+  group_by(phylum) %>%
+  summarize(median=median(agg_rel_abund)) %>%
+  arrange((desc(median))) %>% # keep this so that the phyla are sorted properly
+  top_n(6, median) %>%
+  pull(phylum) # use pull to convert the names from a data frame to a vector of names
+
+#Make boxplot of 5 most abundant phyla
+agg_phylum_data %>%
+  filter(phylum %in% top_phyla) %>%
+  ggplot(aes(x=phylum, y=agg_rel_abund, color=month)) +
+  geom_boxplot()
+
+agg_phylum_data %>%
+  filter(phylum %in% top_phyla) %>%
+  group_by(Group)%>%
+  summarize(total=sum(agg_rel_abund))
+#doesnt equal 1 anymore so the graph doesnt have a y axis that ends at 1.00 why?
+
+
+#use factors to line them up in the same way that theyre lined up in the file
+agg_phylum_data %>%
+  filter(phylum %in% top_phyla) %>%
+  mutate(phylum=factor(phylum, levels=top_phyla)) %>%
+  ggplot(aes(x=phylum, y=agg_rel_abund, color=month)) +
+  geom_boxplot()+
+  labs(title="Phlyum level relative abundance",
+                      x=NULL,
+                      y="Relative abundance") +
+  scale_y_continuous(limits = c(0, 1)) +  # <-- force y-axis from 0 to 1
+  theme_classic()
+ 
+ #since most things are close to the bottom it might be helpful to use log-scaled-y axis
+#putting relative abundance in percent
+
+#im also setting a max value so i can have the graph have the upper bound of 64.5% cuz thats the max
+
+max_val <- agg_phylum_data %>%
+  filter(phylum %in% top_phyla) %>%
+  summarize(max_abund = max(agg_rel_abund) * 100) %>%
+  pull(max_abund)
+
+agg_phylum_data %>%
+  filter(phylum %in% top_phyla) %>%
+  mutate(phylum=factor(phylum, levels=top_phyla)) %>%
+  ggplot(aes(x=phylum, y=agg_rel_abund, color=season)) +
+  geom_boxplot() +
+  scale_color_manual(name=NULL,
+                     values=c("red", "blue"),
+                     breaks=c("Fall/Winter", "Spring/Summer"),
+                     labels=c("Fall/Winter", "Spring/Summer")) +
+  labs(title="There are no obvious phylum-level differences between the/ndiagnosis groups",
+       x=NULL,
+       y="Relative abundance") +
+  theme_classic()
+
+
+
+#my graph y axis doesnt reach 100% so i am checking the max
+
+agg_phylum_data %>%
+  filter(phylum %in% top_phyla) %>%
+  summarize(max_rel_abund = max(agg_rel_abund) * 100)
+# 64.5
+
+#the top 6 phyla together account for 64.5% on average, then the remaining 
+#~35.5% is spread across the many rare phyla im not plotting.
+
+##############################################################################
+
+#as deep as possible? lets see what he means
+
+deep_taxonomy <- deep_taxonomy%>%
+  rename_all(tolower) %>%
+  mutate(taxonomy=str_replace_all(string=taxonomy, pattern="//(//d*//)", replacement="")) %>%
+  mutate(taxonomy=str_replace_all(string=taxonomy, pattern=";$", replacement="")) %>%
+  mutate(taxonomy=str_replace_all(string=taxonomy, pattern=".*;", replacement=""))
+#describes the cons_taxonomy to the highest it can be classified whether its genera or whatever
+
+agg_deep_data <- inner_join(otu_data, deep_taxonomy) %>%
+  group_by(Group, taxonomy) %>%
+  summarize(agg_rel_abund=sum(rel_abund)) %>%
+  inner_join(., Sites) %>%
+  ungroup() #without this, the Group and phylum columns remain grouped
+
+top_deep_taxa <- agg_deep_data %>%
+  group_by(taxonomy) %>%
+  summarize(median=median(agg_rel_abund)) %>%
+  arrange((desc(median))) %>% # keep this so that the phyla are sorted properly
+  top_n(5, median) %>%
+  pull(taxonomy) # use pull to convert the names from a data frame to a vector of names
+
+agg_deep_data %>%
+  filter(taxonomy %in% top_deep_taxa) %>%
+  mutate(taxonomy=factor(taxonomy, levels=top_deep_taxa))%>%
+  mutate(agg_rel_abund=agg_rel_abund+1/400) %>%
+  ggplot(aes(x=taxonomy, y=agg_rel_abund, color=season)) +
+  geom_boxplot() +
+  geom_hline(yintercept=1/450, color="gray") +
+  scale_color_manual(name=NULL,
+                     values=c("red", "blue"),
+                     breaks=c("Fall/Winter", "Spring/Summer"),
+                     labels=c("Fall/Winter", "Spring/Summer")) +
+  labs(title="Phlyum level relative abundance",
+       x=NULL,
+       y="Relative abundance (%)") +
+  theme_classic()
+
+agg_deep_data %>%
+  group_by(taxonomy) %>%
+  summarize(median=median(agg_rel_abund)) %>%
+  arrange((desc(median)))
+
+
+
+
+
+###########################
+#hypothesis testing
+
+library(broom)
+library(purrr)
+
+genus_tests_site<- agg_genus_data %>%
+  nest(Group_data = c(-genus)) %>%
+  mutate(test=map(Group_data, ~tidy(kruskal.test(agg_rel_abund~site, data=.)))) %>%
+  unnest(test)
+
+genus_tests_season <- agg_genus_data %>%
+  nest(Group_data = c(-genus)) %>%
+  mutate(test=map(Group_data, ~tidy(kruskal.test(agg_rel_abund~season, data=.)))) %>%
+  unnest(test)
+
+
+genus_tests_fixed_site <- agg_genus_data %>%
+  nest(Group_data = c(-genus)) %>%
+  mutate(test=map(Group_data, ~tidy(kruskal.test(agg_rel_abund~site, data=.)))) %>%
+  unnest(test) %>%
+  mutate(p.value.adj=p.adjust(p.value, method="BH")) %>%
+  arrange(p.value.adj)
+
+genus_tests_fixed_season <- agg_genus_data %>%
+  nest(Group_data = c(-genus)) %>%
+  mutate(test=map(Group_data, ~tidy(kruskal.test(agg_rel_abund~season, data=.)))) %>%
+  unnest(test) %>%
+  mutate(p.value.adj=p.adjust(p.value, method="BH")) %>%
+  arrange(p.value.adj)
+
+sig_phyla_season <- genus_tests_fixed_season %>%
+  filter(p.value.adj <= 0.05) %>%
+  pull(genus)
+
+
+sig_phyla_season_site <- genus_tests_fixed_site %>%
+  filter(p.value.adj <= 0.05) %>%
+  pull(genus)
+
+_______________________________________________________________________________
+
+###Relative abundance stacked bar
+
+#Added a column for percent relative abundance
+
+df_percent<-agg_phylum_data%>% mutate(perc_abund = agg_rel_abund / sum(agg_rel_abund) * 100)
+
+agg_phylum_data %>%
+  group_by(phylum) %>%
+  summarize(mean=mean(agg_rel_abund)) %>%
+  arrange(desc(mean))
+
+df_mean<-agg_phylum_data%>% group_by(phylum) %>%mutate(mean_agg_relabund=mean(agg_rel_abund))
+
+df_percent%>%
+  group_by(phylum)%>%
+  summarize(max=max(perc_abund))%>%
+  arrange(desc(max))
+#I used percent just because its easier for me to understand
+#In the past we've used mean relative abundance but its so small here I
+#Don't see the utility
+
+phylum                   max
+<fct>                  <dbl>
+1 Pseudomonadota        2.30  
+2 Bacteria_unclassified 0.920 
+3 Bacteroidota          0.339 
+4 Chloroflexota         0.330 
+5 Cyanobacteriota       0.232 
+6 Acidobacteriota       0.223 
+7 Planctomycetota       0.188 
+8 Archaea_unclassified  0.170 
+9 Actinomycetota        0.0982
+10 Calditrichota         0.0804
+
+
+mp_relabund<-agg_phylum_data%>%
+  group_by(phylum) %>%
+  mutate(relabund=100*mean(agg_rel_abund))
+  
+mp_relabund%>%
+  group_by(group)%>%
+  summarize(total=sum(relabund))
+
+#In all of pat schloss's tutorials he does the percent of the
+#mean abundances, so i did that here after exploring the differences
+#between doing the mean and the percent, of the raw data.
+#Ask DR whats going on and what the differences between all of this is?
+
+mp_relabund%>%
+  group_by(phylum)%>%
+  summarize(max=max(relabund))%>%
+  arrange(desc(max))
+
+phylum                   max 
+<fct>                  <dbl>
+1 Pseudomonadota        55.3  
+2 Bacteria_unclassified 16.2  
+3 Chloroflexota          5.18 
+4 Bacteroidota           5.08 
+5 Acidobacteriota        3.54 
+6 Cyanobacteriota        2.85 
+7 Planctomycetota        2.67 
+8 Archaea_unclassified   1.46 
+9 Actinomycetota         1.08 
+10 Calditrichota          0.884
+
+#This actually really helped me determine whats abundant and 
+#and whats not im gonna do the cut off at 1.46 because I 
+#Want the cyanos to show up
+
+#Making "Other" Column (All this data is aggregated by phylum not by site)
+
+low_phyla <- mp_relabund %>%
+  group_by(phylum) %>%
+  summarise(max_abund = max(relabund)) %>%
+  filter(max_abund < 2.67) %>%
+  pull(phylum)
+
+
+
+#Aggregate data based on site so plotlooks correct
+
+mp_genus <- agg_genus_data %>%
+  group_by(site,genus) %>%
+  summarise(rel_abund = mean(rel_abund), .groups = "drop") %>%
+  group_by(site) %>%
+  mutate(perlabund = 100 * rel_abund/sum(rel_abund))%>%
+  ungroup()
+
+mp_relabund_other <- mp_relabund %>%
+  mutate(phylum = if_else(phylum %in% low_phyla, "Other", phylum)) %>%
+  group_by(site,phylum)%>%
+  summarize(relabund=sum(relabund),.groups ="drop")%>%
+  group_by(site)%>%
+   #This shifts it by one so our second most abundant is at the bottom toshift the eye
+  
+  
+  #renormalizing values so that each site 
+#sums up to 100%
+#I think this is why my pat schloss thing didnt work tbh
+
+
+mp_relabund_other %>%
+  group_by(site)%>%
+  summarize(total=sum(perlabund))
+#Equals 100 WHEN GROUPED BY SITE thank you God Yippeee!!!
+
+
+#Actually making graph
+
+#After haunted house just add cyanobacteria to the graph and graph it
+#Then create a chart or graph of whats abundant without May
+#Then create a phylum level reletive abundance of just pseudomonodata
+
+phylum_colors <- c(
+  "green", "orange", "blue", "tomato2", "olivedrab", "grey47",
+  "cyan", "coral3", "darkgreen", "magenta", "palegoldenrod", "dodgerblue", "firebrick", "yellow", 
+  "purple4", "lightblue", "grey77", "mediumpurple1", "tan4", "red", "darkblue", "yellowgreen",
+  "slateblue", "seagreen", "gold", "plum", "mediumvioletred", "darkorange", "chartreuse4", 
+  "indianred", "royalblue3", "skyblue3","brown","cornsilk","blueviolet" )
+
+
+
+
+
+fwmay_plot<- mp_relabund_other%>% mutate(phylum=factor(phylum),
+                                         phylum=fct_reorder(phylum,perlabund, .desc=TRUE),#pull(phylum)%>%levels() #we are re ordering the bars by their abundance
+                                         phylum=fct_shift(phylum,n=6))%>%
+  ggplot(aes(x=site,y=perlabund,fill=phylum))+
+  geom_col()+scale_fill_manual(
+    name = NULL,
+    values = c(
+      "Pseudomonadota" = "darkblue",
+      "Chloroflexota" = "magenta",
+      "Bacteroidota" = "yellowgreen",
+      "Acidobacteriota" = "gold",
+      "Cyanobacteriota" = "mediumpurple1",
+      "Planctomycetota" = "darkorange",
+      "Bacteria_unclassified" = "lightblue",
+      "Other" = "red"))+ #the other thing reordered the bars, this reorders the legend
+  scale_y_continuous(expand=c(0,0))+
+  labs(x=NULL,
+       y="Mean Relative Abundance (%)")+
+  theme_classic()
+  
+
+ggsave("fwmayabundancebysite2025.png", width = 11, height = 10)
+  
+  
+genus                   max 
+<fct>                  <dbl>
+1 Pseudomonadota        55.3  
+2 Bacteria_unclassified 16.2  
+3 Chloroflexota          5.18 
+4 Bacteroidota           5.08 
+5 Acidobacteriota        3.54 
+6 Cyanobacteriota        2.85 
+7 Planctomycetota        2.67 
+8 Archaea_unclassified   1.46 
+9 Actinomycetota         1.08 
+10 Calditrichota          0.884
+
+#________Pseudomonadota only for fwmay_____________
+
+Sites <- Sites %>% rename_all(tolower)
+otu_data <- otu_data %>% rename_all(tolower)
+fwmay_cons_taxonomy <- fwmay_cons_taxonomy %>% rename_all(tolower)
+
+Pseudo <- fwmay_cons_taxonomy %>%
+  filter(phylum == "Pseudomonadota")
+  
+
+agg_genus_data<-otu_data%>%
+  inner_join(Sites, by="group")%>%
+  inner_join(Pseudo, by="otu")%>%
+  group_by(group, site, genus) %>%
+  summarise(rel_abund = sum(rel_abund), .groups = "drop") %>%
+  ungroup() %>%
+  select(group, site,genus, rel_abund)
+  
+  
+mp_relabund<- agg_phylum_data %>%
+  group_by(site,phylum) %>%
+  summarise(agg_rel_abund = mean(agg_rel_abund), .groups = "drop") %>%
+  group_by(site) %>%
+  mutate(perlabund = 100 * agg_rel_abund/sum(agg_rel_abund))%>%
+  ungroup()
+
+
+mp_relabund %>%
+  group_by(site) %>%
+  summarise(total = sum(perlabund))
+#it euals 100%???? how?????
+
+mp_relabund%>%
+  group_by(phylum)%>%
+  summarize(max=max(perlabund))%>%
+  arrange(desc(max)) #its good, not OTU aggregated luckily
+
+genus                              max
+<chr>                            <dbl>
+1 Gammaproteobacteria_unclassified 25.2 
+2 Desulfobacteraceae_unclassified  18.6 
+3 Chromatiales_unclassified        15.5 
+4 Deltaproteobacteria_unclassified 10.7 
+5 Halieaceae_unclassified           6.52
+6 Thiolapillus                      4.82
+7 Pseudomonadota_unclassified       4.08
+8 Desulfobulbaceae_unclassified     3.89
+9 Chromatiaceae_unclassified        3.59
+10 Desulfatiglans                    2.22
+
+
+
+low_phyla<- mp_relabund %>%
+  group_by(phylum) %>%
+  summarise(max_abund = max(perlabund)) %>%
+  filter(max_abund < 2.67) %>%   # your chosen cutoff
+  pull(phylum) 
+  
+mp_relabund_other <- mp_relabund %>%
+  mutate(phylum = if_else(phylum %in% low_phyla, "Other", phylum)) %>%
+  group_by(site,phylum)%>%
+  summarize(perlabund=sum(perlabund),.groups ="drop")%>%
+  group_by(phylum)
+  #This shifts it by one so our second most abundant is at the bottom toshift the eye
+  
+  
+  #renormalizing values so that each site 
+  #sums up to 100%
+  #I think this is why my pat schloss thing didnt work tbh
+  
+genus_colors <- c(
+  "green", "orange", "blue", "tomato2", "olivedrab", "grey47",
+  "cyan", "coral3", "darkgreen", "magenta", "palegoldenrod", "dodgerblue", "firebrick", "yellow", 
+  "purple4", "lightblue", "grey77", "mediumpurple1", "tan4", "red", "darkblue", "yellowgreen",
+  "slateblue", "seagreen", "gold", "plum", "mediumvioletred", "darkorange", "chartreuse4", 
+  "indianred", "royalblue3", "skyblue3","brown","cornsilk","blueviolet" )
+
+
+
+unique_genera <- unique(mp_relabund_other$genus)
+ 
+fwmay_genplot<- mp_relabund_other%>% mutate(genus=factor(genus),
+                                         genus=fct_reorder(genus,perlabund, .desc=TRUE),
+                                         genus=fct_shift(genus,n=4))%>%#pull(genus)%>%levels() #we are re ordering the bars by their abundance
+  ggplot(aes(x=site,y=perlabund,fill=genus))+
+  geom_col()+scale_fill_manual(
+    name = NULL,
+    values = c(
+      "Gammaproteobacteria_unclassified" = "darkblue",
+      "Desulfobacteraceae_unclassified" = "magenta",
+      "Chromatiales_unclassified" = "yellowgreen",
+      "Deltaproteobacteria_unclassified" = "gold",
+      "Halieaceae_unclassified" = "mediumpurple1",
+      "Thiolapillus" = "darkorange",
+      "Pseudomonadota_unclassified" = "blue",
+      "Desulfobulbaceae_unclassified"= "green",
+      "Chromatiaceae_unclassified"="cyan",
+      "Desulfatiglans"="brown",
+      "Other" = "red"))+ #the other thing reordered the bars, this reorders the legend
+  scale_y_continuous(expand=c(0,0))+
+  labs(x=NULL,
+       y="Mean Relative Abundance (%)")+
+  theme_classic()
+
+ggsave("fwmaypseudoallsites.png", width = 11, height = 10)
+
+#wanna seemost abundant OTU
+
+agg_otu_data<-otu_data%>%
+    inner_join(Sites, by="group")%>%
+  inner_join(Pseudo, by="otu")%>%
+group_by(group,otu,site,season) %>%
+ summarise(rel_abund = sum(rel_abund), .groups = "drop") %>%
+ 
+
+mp_otu <- agg_otu_data %>%
+  group_by(otu) %>%
+  summarise(mean_rel_abund = mean(rel_abund) * 100, .groups = "drop")
+ 
+top20_otus <- mp_otu %>%
+  arrange(desc(mean_rel_abund)) %>%
+  slice_head(n = 20)
+
+
+##############################
+
+otu_season <- agg_otu_data %>%
+  group_by(group, otu) %>%
+  summarise(mean_rel_abund = mean(rel_abund) * 100, .groups = "drop")
+
+# 3. Get top 20 OTUs per season
+top20_per_season <- otu_season %>%
+  group_by(group) %>%
+  arrange(desc(mean_rel_abund)) %>%
+  slice_head(n = 20) %>%
+  ungroup()
+
+
+write.xlsx(top20_otus,"top20.xlsx")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
