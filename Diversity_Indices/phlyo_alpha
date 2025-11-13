@@ -1,0 +1,189 @@
+library(tidyverse)
+library(openxlsx)
+library(phyloseq)
+
+OTU=read.table("C:/Users/Pinel/OneDrive - my.hamptonu.edu/R code/final files/fwmay.opti_mcc.0.03.subsample.shared",
+header=TRUE, sep="/t")
+
+tax=read.table("C:/Users/Pinel/OneDrive - my.hamptonu.edu/R code/final files/fwmay.opti_mcc.0.03.cons.taxonomy",
+               header=TRUE, sep="/t")
+
+meta <- read.table(
+  "C:/Users/Pinel/OneDrive - my.hamptonu.edu/R code/final files/div.txt",
+  header = TRUE,       # first row contains column names
+  sep = "\t",          # tab-separated
+  stringsAsFactors = FALSE,
+  na.strings = c("", "NA")  # treat blank cells as NA
+)
+
+# Remove rows that are completely empty
+meta <- meta[rowSums(is.na(meta)) != ncol(meta), ]
+
+#div<-head(div,30)
+#div<-div%>%select(-coverage, -label,-nseqs,-shannon_lci,-method,-shannon_hci,-sobs,
+             -invsimpson,-invsimpson_lci,-invsimpson_hci)
+
+#write.xlsx(div,"div.xlsx")
+
+
+#meta%>%inner_join(meta,div, by=group)
+
+
+
+
+
+#OTU table
+row.names(OTU) = OTU$Group
+OTU.clean = OTU[,-which(names(OTU) %in% c("label", "numOtus", "Group"))]
+row.names(tax) = tax$OTU
+
+#Tax table (Im scared)
+row.names(tax) = tax$OTU
+tax.clean = tax[row.names(tax) %in% colnames(OTU.clean),]
+
+tax.clean = separate(tax.clean, Taxonomy, into = c("Domain", 
+                                                   "Phylum", 
+                                                   "Class", "Order", "Family", 
+                                                   "Genus"), sep=";")
+
+tax.clean = tax.clean[,-which(names(tax.clean) %in% c("OTU"))]
+#We removedtheotu column cuz itsarow now
+
+
+#Alpha diversity
+
+#Create 2x2 plot environment so that we can see all 4 metrics at once. 
+par(mfrow = c(2, 2))
+
+#Then plot each metric.
+hist(meta$shannon, main="Shannon diversity", xlab="", breaks=10)
+shapiro.test(meta$shannon)
+
+#Shapiro-Wilk normality test
+
+#data:  meta$shannon
+#W = 0.97555, p-value = 0.6989
+#shannon diversity is normally distributed
+
+
+aov.shannon.season=aov(shannon~season,data=meta)
+summary(aov.shannon.season)
+
+Df Sum Sq Mean Sq F value  Pr(>F)    
+season       1 0.1587 0.15872   22.49 5.6e-05 ***
+  Residuals   28 0.1976 0.00706                    
+---
+  Signif. codes:  
+  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+
+ TukeyHSD(aov.shannon.season)
+ 
+ Spring_summer-Fall/Winter 0.2424564 0.1377394 0.3471734
+                            p adj
+ Spring_summer-Fall/Winter 5.6e-05
+ 
+ #Since p adj = 0.000056 < 0.05, 
+ #the difference between Spring/Summer and Fall/Winter is statistically significant.
+ 
+ 
+ #The positive diff (0.242) means Spring/Summer has a significantly higher Shannon diversity than Fall/Winter.
+ 
+ #The 95% confidence interval (0.138 to 0.347) does not include 0, reinforcing the significance.
+
+#kruskal between seasons were not statistically sig but the shannons are omg
+ 
+ par(mfrow = c(1, 1))
+ #Plot
+ boxplot(shannon ~ season, data=meta, ylab="Shannon's diversity")
+ 
+ _______________________________________________________________________
+ 
+ ####Lets do it all again by site
+ 
+ aov.shannon.site=aov(shannon~site,data=meta)
+ summary(aov.shannon.site)
+ 
+ Df Sum Sq Mean Sq F value Pr(>F)
+ site         2 0.0274 0.01369   1.124   0.34
+ Residuals   27 0.3289 0.01218             
+ 
+ 
+ 
+ TukeyHSD(aov.shannon.site)
+ 
+ $site
+                              diff         lwr        upr     p adj
+ Natural Reef-Control        0.0738621 -0.04852048 0.19624468 0.3084418
+ Planting Reef-Control       0.0329547 -0.08942788 0.15533728 0.7840297
+ Planting Reef-Natural Reef -0.0409074 -0.16328998 0.08147518 0.6887239
+ 
+ #Sites are not significantly different
+ 
+ par(mfrow = c(1, 1))
+ #Plot
+ boxplot(shannon ~ site, data=meta, ylab="Shannon's diversity")
+ 
+ 
+ #Make sure I know why i havent done other stats tests yet
+ 
+ #Heatmap of OTU for OTU analysis
+ 
+ggplot(top20_per_season,aes(group,otu,fill=mean_rel_abund))+
+  geom_tile()
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
