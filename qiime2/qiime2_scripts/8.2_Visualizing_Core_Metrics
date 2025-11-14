@@ -5,7 +5,7 @@ qiime diversity alpha-group-significance \
 
 qiime diversity alpha-group-significance \
   --i-alpha-diversity core-metrics-results/evenness_vector.qza \
-  --m-metadata-file metadata.tsv \ 
+  --m-metadata-file metadata.tsv \
   --o-visualization core-metrics-results/evenness-group-significance.qzv
 
 qiime diversity beta-group-significance \
