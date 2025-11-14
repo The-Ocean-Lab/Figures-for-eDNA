@@ -1,4 +1,5 @@
 # Create a rarefy freature table for downstream analysis in R 
+# after this step continue to 4.0
 
 qiime feature-table rarefy \
   --i-table table.qza \
