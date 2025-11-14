@@ -20,8 +20,8 @@ qiime taxa filter-table \
                                                # filters out mitochondria and chloroplast sequences
 
 qiime feature-table summarize \
-  --i-table filtered-mitochondria-chloroplast-table.qza \
-  --o-visualization VIEWABLE_chloroplast-mitochondria_filtered-table.qzv
+  --i-table mitochondria-chloroplast-table.qza \
+  --o-visualization VIEWABLE_chloroplast-mitochondria-table.qzv
                                                # viewable frequency table with new exclusions 
 cutoff=1                                       # filters out anything with a frequency of 1 
 
