@@ -16,7 +16,7 @@ qiime taxa filter-table \
   --i-table table.qza \
   --i-taxonomy taxonomy.qza \
   --p-exclude mitochondria,chloroplast \
-  --o-filtered-table filtered-mitochondria-chloroplast-table
+  --o-filtered-table mitochondria-chloroplast-table
                                                # filters out mitochondria and chloroplast sequences
 
 qiime feature-table summarize \
