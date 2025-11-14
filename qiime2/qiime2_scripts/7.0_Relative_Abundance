@@ -15,7 +15,65 @@ qiime tools export \
   --input-path rel-phyla-table.qza \
   --output-path rel-table                    # creates a folder called rel-table and puts the folder in there
 
-cp rel-phyla-table.qza rel-table
+mv phyla-table.qza rel-table
+mv rel-phyla-table.qza rel-table
 cd rel-table                                 # goes into rel-table folder
 biom convert -i feature-table.biom -o rel-phyla-table.tsv --to-tsv
                                              # converts into a .tsv file
+
+
+################ Phyla to Genera Rel_Ab Workflow ################
+
+table="pathname of table or rarefied table"
+
+qiime taxa collapse \
+  --i-table $table \
+  --i-taxonomy filtered-taxonomy.qza \
+  --p-level 2 \
+  --o-collapsed-table phyla-table.qza && qiime taxa collapse \
+  --i-table $table \
+  --i-taxonomy filtered-taxonomy.qza \
+  --p-level 3 \
+  --o-collapsed-table class-table.qza && qiime taxa collapse \
+  --i-table $table \
+  --i-taxonomy filtered-taxonomy.qza \
+  --p-level 4 \
+  --o-collapsed-table order-table.qza && qiime taxa collapse \
+  --i-table $table \
+  --i-taxonomy filtered-taxonomy.qza \
+  --p-level 5 \
+  --o-collapsed-table family-table.qza && qiime taxa collapse \
+  --i-table $table \
+  --i-taxonomy filtered-taxonomy.qza \
+  --p-level 6 \
+  --o-collapsed-table genera-table.qza
+
+qiime feature-table relative-frequency \
+--i-table phyla-table.qza \
+--o-relative-frequency-table rel-phyla-table.qza && qiime feature-table relative-frequency \
+--i-table class-table.qza \
+--o-relative-frequency-table rel-class-table.qza && qiime feature-table relative-frequency \
+--i-table order-table.qza \
+--o-relative-frequency-table rel-order-table.qza && qiime feature-table relative-frequency \
+--i-table family-table.qza \
+--o-relative-frequency-table rel-family-table.qza && qiime feature-table relative-frequency \
+--i-table genera-table.qza \
+--o-relative-frequency-table rel-genera-table.qza
+
+qiime tools export \
+  --input-path rel-phyla-table.qza \
+  --output-path rel-table && qiime tools export \
+  --input-path rel-class-table.qza \
+  --output-path rel-table && qiime tools export \
+  --input-path rel-order-table.qza \
+  --output-path rel-table && qiime tools export \
+  --input-path rel-family-table.qza \
+  --output-path rel-table && qiime tools export \
+  --input-path rel-genera-table.qza \
+  --output-path rel-table
+
+mv phyla-table.qza class-table.qza order-table.qza family-table.qza genera-table.qza rel-table
+mv rel-phyla-table.qza rel-class-table.qza rel-order-table.qza rel-family-table.qza rel-genera-table.qza rel-table
+
+biom convert -i feature-table.biom -o rel-phyla-table.tsv --to-tsv && biom convert -i feature-table.biom -o rel-class-table.tsv --to-tsv && biom convert -i feature-table.biom -o rel-order-table.tsv --to-tsv && biom convert -i feature-table.biom -o rel-family-table.tsv --to-tsv && biom convert -i feature-table.biom -o rel-genera-table.tsv --to-tsv
+
