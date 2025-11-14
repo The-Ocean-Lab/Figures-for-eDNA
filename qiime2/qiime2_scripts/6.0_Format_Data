@@ -31,4 +31,3 @@ qiime feature-table filter-samples \
   --o-filtered-table filtered-cutoff-table    # if cutoff=0 then no filtering and there will be a "no filtering requested" error
 
 cp filtered-cutoff-table.qza ancom
-mv ancom/filtered-cutoff-table ancom/filtered-feature-table.qza
