@@ -1,6 +1,7 @@
 8.0 Alpha Rarefraction
 
 # pull up VIEWABLE_chloroplast-mitochondria_filtered-table.qzv then interactive sample detail as a guide to determine the subsampling depth
+# if you subsampled then everything will be at the same
 # saving mapping file as a tsv with sample id, year, month, date, season, site, replicate, forward path, and reverse path
 # move copy of metadata into alpha_div folder
 
