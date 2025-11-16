@@ -21,3 +21,6 @@ qiime tools export \
   --input-path merged-data.qzv \
   --output-path merged-data
 # makes an folder with files in it including merged data in a .tsv
+
+mv merged-data.qzv merged-data.tsv transposed-table.qza merged-data
+# moves outputs and intermediates into the merged-data folder
