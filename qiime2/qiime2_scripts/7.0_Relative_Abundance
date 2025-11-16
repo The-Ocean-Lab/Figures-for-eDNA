@@ -60,20 +60,32 @@ qiime feature-table relative-frequency \
 --i-table genera-table.qza \
 --o-relative-frequency-table rel-genera-table.qza
 
+# the feature-table.biom file must correspond with the input taxon-level table
+# (ie) a feature table down to genera will make a tsv with genera data no matter the input rel-taxon-table.qza file
+
+
 qiime tools export \
   --input-path rel-phyla-table.qza \
-  --output-path rel-table && qiime tools export \
+  --output-path rel-table && mv phyla-table.qza rel-phyla-table.qza rel-table &&
+cd rel-table && biom convert -i feature-table.biom -o rel-phyla-table.tsv --to-tsv && cd .. 
+
+qiime tools export \
   --input-path rel-class-table.qza \
-  --output-path rel-table && qiime tools export \
+  --output-path rel-table && mv class-table.qza rel-class-table.qza rel-table &&
+cd rel-table && biom convert -i feature-table.biom -o rel-class-table.tsv --to-tsv && cd ..
+
+qiime tools export \
   --input-path rel-order-table.qza \
-  --output-path rel-table && qiime tools export \
+  --output-path rel-table && mv order-table.qza rel-order-table.qza rel-table &&
+cd rel-table && biom convert -i feature-table.biom -o rel-order-table.tsv --to-tsv && cd ..
+
+qiime tools export \
   --input-path rel-family-table.qza \
-  --output-path rel-table && qiime tools export \
+  --output-path rel-table && mv family-table.qza rel-family-table.qza rel-table &&
+cd rel-table && biom convert -i feature-table.biom -o rel-family-table.tsv --to-tsv && cd ..
+
+qiime tools export \
   --input-path rel-genera-table.qza \
-  --output-path rel-table
-
-mv phyla-table.qza class-table.qza order-table.qza family-table.qza genera-table.qza rel-table
-mv rel-phyla-table.qza rel-class-table.qza rel-order-table.qza rel-family-table.qza rel-genera-table.qza rel-table
-
-biom convert -i feature-table.biom -o rel-phyla-table.tsv --to-tsv && biom convert -i feature-table.biom -o rel-class-table.tsv --to-tsv && biom convert -i feature-table.biom -o rel-order-table.tsv --to-tsv && biom convert -i feature-table.biom -o rel-family-table.tsv --to-tsv && biom convert -i feature-table.biom -o rel-genera-table.tsv --to-tsv
+  --output-path rel-table && mv genera-table.qza rel-genera-table.qza rel-table &&
+cd rel-table && biom convert -i feature-table.biom -o rel-genera-table.tsv --to-tsv && cd ..
 
