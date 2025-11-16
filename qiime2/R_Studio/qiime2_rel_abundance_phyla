@@ -158,7 +158,7 @@ top10 <-ggplot(top10_df, aes(x = site, y = rel_ab, fill = TAXON)) +
 top10 + theme(legend.text = element_text(size = 8),  
               legend.title = element_text(size = 8)) 
 
-top10_df <-  tbl_df(df) %>%
+top10_df <-  as_tibble(df) %>%
   group_by(sample) %>%
   arrange(rel_ab, .by_group = TRUE) %>%
   top_n(10, rel_ab)
