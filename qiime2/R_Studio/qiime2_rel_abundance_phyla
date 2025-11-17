@@ -94,6 +94,22 @@ df <- df %>%
     )
   )
 
+df <- df %>%
+  mutate(
+    sample = case_when(
+      sample == "NR1" ~ "",
+      sample == "C1" ~ "",
+      sample == "CONTROL" ~ "",
+      TRUE ~ sample  # keep existing values or NA for others
+    ),
+    site = case_when(
+      str_detect(sample, "NR1") ~ "natural_reef",
+      str_detect(sample, "C1") ~ "control",
+      str_detect(sample, "CONTROL") ~ "control",
+      TRUE ~ NA_character_
+    )
+  )
+
 View(df)
 # the mutate part looks through the sample column for the provided string, then it creates a season column, and according to the string adds the correct season 
 
@@ -103,6 +119,10 @@ df <- df %>%
 View(df) # should be correct site name and extra column with the month or season
 
 df$month <- factor(df$month, levels= c("Sept","Nov","Feb","May"))
+df$season <- factor(df$season, levels= c("fall","winter","spring"))
+
+write.csv(df, file="/Users/zurimurph/Desktop/Ocean_Lab/raw_data/df.csv", row.names=FALSE) #ouputs df as a csv file 
+
 
 avg_phyla <- df %>%
   group_by(site, phyla, season) %>%
@@ -131,6 +151,8 @@ colors <- c(
   "firebrick", "darksalmon", "tomato2", "orange","darkgoldenrod4", "darkseagreen", "olivedrab", "darkgreen", "darkcyan","dodgerblue", "darkblue", "mediumpurple1","darkslateblue", "purple4","deeppink4", "grey47")
 # 16 colors making a rainbow graph
 
+avg_phyla$phyla <- fct_relevel(avg_phyla$phyla, "Eukaryota", after = Inf)
+
 graph <- ggplot(df, aes(x = site, y = rel_ab, fill = TAXON)) +
   geom_bar(stat = "identity", position = "fill") +
   facet_wrap(~ TEMPORAL, scales = "free_x") +
@@ -138,11 +160,11 @@ graph <- ggplot(df, aes(x = site, y = rel_ab, fill = TAXON)) +
   labs(x = "Site", y = "Relative Abundance", fill = "TAXON") +
   scale_fill_manual(values = colors) # set to the color scheme
 
-graph + theme(legend.text = element_text(size = 8),  
-              legend.title = element_text(size = 8)) # make the text bigger
+graph + theme(legend.text = element_text(size = 12),  
+              legend.title = element_text(size = 15)) # make the text bigger
 
-top10_df <-  tbl_df(df) %>%
-  group_by(site) %>%
+top10_df <-  as_tibble(df) %>%
+  group_by(season) %>%
   arrange(rel_ab, .by_group = TRUE) %>%
   top_n(10, rel_ab)
 
@@ -155,25 +177,20 @@ top10 <-ggplot(top10_df, aes(x = site, y = rel_ab, fill = TAXON)) +
   labs(x = "Site", y = "Relative Abundance", fill = "TAXON") +
   scale_fill_manual(values = colors) 
 
-top10 + theme(legend.text = element_text(size = 8),  
-              legend.title = element_text(size = 8)) 
+top10 + theme(legend.text = element_text(size = 12),  
+              legend.title = element_text(size = 15)) 
 
-top10_df <-  as_tibble(df) %>%
-  group_by(sample) %>%
-  arrange(rel_ab, .by_group = TRUE) %>%
-  top_n(10, rel_ab)
-View(top10_df)
+my_colors <- paletteer::paletteer_d("lisa::FridaKahlo") # choose palette from  https://r-graph-gallery.com/color-palette-finder 
 
-top_10 <- ggplot(top10_df, aes(x = sample, y = rel_ab, fill = phyla)) +
-  geom_bar(stat = "identity", position = "stack") +
-  facet_wrap(~ TEMPEORAL, scales = "free_x") +
+top10_phyla <- ggplot(top10_df, aes(x = site, y = mean_rel_ab, fill = phyla)) +
+  geom_bar(stat = "identity", position = "fill") +
+  facet_wrap(~ TEMPORAL, scales = "free_x") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  labs(x = "Sample", y = "Relative Abundance", fill = "TAXON")  +
-  scale_fill_manual(values = colors)
+  labs(x = "Site", y = "Relative Abundance", fill = "phyla") +
+  scale_fill_paletteer_d("MetBrewer::Hokusai1") # use adobe color or https://r-graph-gallery.com/color-palette-finder 
+top10_phyla
 
 # if position = "fill" then the rel ab will equal 1 
 # if position = "stack" then it will add up all the rel_ab by whatever you grouped by 
 
-top_10
-
-write.csv(df, file="/Users/zurimurph/Desktop/Ocean_Lab/raw_data/df.csv", row.names=FALSE) #ouputs df as a csv file 
+write.csv(df, file="/Users/zurimurph/Desktop/Ocean_Lab/raw_data/top10_df.csv", row.names=FALSE) #ouputs df as a csv file 
