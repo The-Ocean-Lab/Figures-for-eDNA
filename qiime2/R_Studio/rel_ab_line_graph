@@ -1,0 +1,47 @@
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(forcats)
+library(stringr)
+library(RColorBrewer)
+library(randomcoloR)
+library(paletteer)
+
+
+
+df <- read.csv("/Users/zurimurph/Desktop/Ocean_Lab/raw_data/df.csv") # use df from relative abundance workflow 
+View(df)
+
+df$month <- factor(df$month, levels= c("Sept","Nov","Feb","May")) # reorder 
+
+top6_overall <- df %>%
+  group_by(phyla) %>%
+  summarise(mean_rel_ab = mean(rel_ab, na.rm = TRUE)) %>%
+  arrange(desc(mean_rel_ab)) %>%
+  slice_head(n = 6) %>%
+  pull(phyla) # grabs the top 6 overall then graphs those, the top 6 overall may not match the top 6 for that month fyi
+
+top6_line <- avg_phyla %>%
+  filter(phyla %in% top6_overall) # creates a new database with 
+
+top6_line %>%
+  ggplot(aes(x = month, y = mean_rel_ab, group = phyla, color = phyla)) +
+  geom_line(linewidth = 1.2) + # changes line width
+  ggtitle("Average Seasonal Dynamics of Dominant Plankton Phyla") + # changes the name of title
+  ylab("Relative Abundance") + # makes a y label 
+  xlab("Month") + # makes a x label 
+  scale_colour_paletteer_d("nord::algoma_forest") + # choose a 
+  theme_bw() +
+  scale_x_discrete(expand = c(0, 0)) +
+  theme(axis.text.x = element_text(size = 10, face = "bold"),
+        axis.text.y = element_text(size = 10, face = "bold"),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12)) +
+  theme(
+    panel.grid.minor = element_blank(),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 15)
+  )
+
+
