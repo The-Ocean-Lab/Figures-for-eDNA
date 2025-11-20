@@ -1,1 +1,10 @@
+# Goal: to visualize the alpha diversity indices of observed, chao1, ACE, shannon, Simpson, InvSimpson, Fisher as box and whisker plots
 
+library(ggplot2)
+library(phyloseq)
+
+plot_richness(merged_physeq)
+# plots observed, chao1, ACE, shannon, Simpson, InvSimpson, Fisher
+
+plot_richness(merged_physeq, measures=c("Simpson", "Shannon")) 
+# only does simpson and shannon, can be adjusted to any indice listed above
