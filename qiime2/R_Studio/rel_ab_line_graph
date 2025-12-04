@@ -31,7 +31,7 @@ top6_line %>%
   ggtitle("Average Seasonal Dynamics of Dominant Plankton Phyla") + # changes the name of title
   ylab("Relative Abundance") + # makes a y label 
   xlab("Month") + # makes a x label 
-  scale_colour_paletteer_d("nord::algoma_forest") + # choose a 
+  scale_colour_paletteer_d("nord::algoma_forest") + # choose a palette from https://r-graph-gallery.com/color-palette-finder
   theme_bw() +
   scale_x_discrete(expand = c(0, 0)) +
   theme(axis.text.x = element_text(size = 10, face = "bold"),
