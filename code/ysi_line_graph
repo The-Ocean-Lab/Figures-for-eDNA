@@ -1,0 +1,177 @@
+# the goal of this code is to make a line graph with ysi data sites are separate
+
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(forcats)
+library(stringr)
+library(RColorBrewer)
+library(randomcoloR)
+library(paletteer)
+
+df <- ysi
+View(df)
+
+df$DO_perc <- NULL
+
+df <- df %>%
+  mutate(across(.cols = -sample, .fns = as.numeric)) # turn every column numeric except site
+str(df)
+
+df <- pivot_longer(
+  df,
+  cols = -sample,
+  names_to = "Parameter",
+  values_to = "Value"
+)
+
+df <- df %>%
+  mutate(
+    sample = case_when(
+      sample == "NR" ~ "",
+      sample == "Control" ~ "",
+      sample == "PR" ~ "",
+      sample == "Oxford" ~ "",
+      TRUE ~ sample  # keep existing values or NA for others
+    ),
+    site = case_when(
+      str_detect(sample, "NR") ~ "NR",
+      str_detect(sample, "Control") ~ "C",
+      str_detect(sample, "PR") ~ "PR",
+      str_detect(sample, "Oxford") ~ "Oxford",
+      TRUE ~ NA_character_
+    )
+  )
+
+df <- df %>%
+  mutate(
+    sample = case_when(
+      sample == "Sep" ~ "",
+      sample == "Nov" ~ "",
+      sample == "Feb" ~ "",
+      sample == "May" ~ "",
+      sample == "June" ~ "",
+      sample == "Jul" ~ "",
+      sample == "Aug" ~ "",
+      TRUE ~ sample  # keep existing values or NA for others
+    ),
+    month = case_when(
+      str_detect(sample, "Sep") ~ "Sep",
+      str_detect(sample, "Nov") ~ "Nov",
+      str_detect(sample, "Feb") ~ "Feb",
+      str_detect(sample, "May") ~ "May",
+      str_detect(sample, "June") ~ "Jun",
+      str_detect(sample, "Jul") ~ "Jul",
+      str_detect(sample, "Aug") ~ "Aug",
+      TRUE ~ NA_character_
+    )
+  )
+
+df <- df %>%
+  mutate(
+    sample = case_when(
+      sample == "Sep" ~ "",
+      sample == "Nov" ~ "",
+      sample == "Feb" ~ "",
+      sample == "May" ~ "",
+      sample == "June" ~ "",
+      sample == "Jul" ~ "",
+      sample == "Aug" ~ "",
+      TRUE ~ sample  # keep existing values or NA for others
+    ),
+    season = case_when(
+      str_detect(sample, "Sep") ~ "fall/winter",
+      str_detect(sample, "Nov") ~ "fall/winter",
+      str_detect(sample, "Feb") ~ "fall/winter",
+      TRUE ~ "spring/summer"
+    )
+  )
+
+df$month <- factor(df$month, levels= c("Sep","Nov","Feb","May","Jun","Jul","Aug")) # reorder 
+
+
+# all together
+
+ggplot(df, aes(x = month, y = Value, group = Parameter, color = Parameter)) +
+  geom_line() + 
+  facet_wrap(~site , scales = "free_x") +
+  scale_color_manual(values = colors) + 
+  theme(
+    panel.grid.minor = element_blank(),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 15)
+  )
+
+colors <- c("#33658A","#679289", "#F6AE2D")
+
+phylum_colors <- c("#A54657",  "#582630", "#F7EE7F", "#4DAA57","#F1A66A","#F26157", "#F9ECCC", "#679289", "#33658A",
+                   "#F6AE2D","#86BBD8", "blue","mediumvioletred","darkgreen","grey"4)
+"grey22", "darkcyan", "orchid1", "green", "orange", "blue", "tomato2", "olivedrab", "grey47",
+"cyan", "coral3", "darkgreen", "magenta", "palegoldenrod", "dodgerblue", "firebrick", "yellow",
+"purple4", "lightblue", "grey77", "mediumpurple1", "tan4", "red", "darkblue", "yellowgreen",
+"slateblue", "seagreen", "gold", "plum", "mediumvioletred", "darkorange", "chartreuse4",
+"indianred", "royalblue3", "skyblue3","brown","cornsilk","blueviolet" )
+
+# individual 
+
+ysi_sal <- df %>%
+  ggplot(aes(x = month, y = salinity, group = site, color = site)) +
+  geom_line(linewidth = 1.2) + # changes line width
+  ggtitle("YSI") + # changes the name of title
+  ylab("Salinity") + # makes a y label 
+  xlab("Month") + # makes a x label 
+  scale_colour_paletteer_d("nord::algoma_forest") + # choose a 
+  theme_bw() +
+  scale_x_discrete(expand = c(0, 0)) +
+  theme(axis.text.x = element_text(size = 10, face = "bold"),
+        axis.text.y = element_text(size = 10, face = "bold"),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12)) +
+  theme(
+    panel.grid.minor = element_blank(),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 15)
+  )
+
+ysi_sal
+
+ysi_DO <- df %>%
+  ggplot(aes(x = month, y = DO_mg_L, group = site, color = site)) +
+  geom_line(linewidth = 1.2) + # changes line width
+  ggtitle("YSI") + # changes the name of title
+  ylab("DO_mg_L") + # makes a y label 
+  xlab("Month") + # makes a x label 
+  scale_colour_paletteer_d("nord::algoma_forest") + # choose a 
+  theme_bw() +
+  scale_x_discrete(expand = c(0, 0)) +
+  theme(axis.text.x = element_text(size = 10, face = "bold"),
+        axis.text.y = element_text(size = 10, face = "bold"),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12)) +
+  theme(
+    panel.grid.minor = element_blank(),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 15)
+  )
+
+ysi_DO
+
+ysi_temp <- df %>%
+  ggplot(aes(x = month, y = temp, group = site, color = site)) +
+  geom_line(linewidth = 1.2) + # changes line width
+  ggtitle("YSI") + # changes the name of title
+  ylab("Temp") + # makes a y label 
+  xlab("Month") + # makes a x label 
+  scale_colour_paletteer_d("nord::algoma_forest") + # choose a 
+  theme_bw() +
+  scale_x_discrete(expand = c(0, 0)) +
+  theme(axis.text.x = element_text(size = 10, face = "bold"),
+        axis.text.y = element_text(size = 10, face = "bold"),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12)) +
+  theme(
+    panel.grid.minor = element_blank(),
+    legend.text = element_text(size = 12),
+    legend.title = element_text(size = 15)
+  )
