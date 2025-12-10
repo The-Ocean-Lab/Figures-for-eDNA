@@ -8,7 +8,7 @@ Based on Wright Labs workshop 05/12/2025 and 05/13/2025
 
 #### activate qiime2 ####
 conda activate
-conda activate qiime2-amplicon-2025.7               # open qiime2 environment (this protocol is based on version 2025.7)
+conda activate qiime2-amplicon-2025.10 # open qiime2 environment (this protocol is based on version 2025.7)
 
 1.1 Create a Mapping File
 
