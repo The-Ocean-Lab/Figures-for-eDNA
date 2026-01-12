@@ -1,5 +1,7 @@
 4.1 Filtering Taxonomy 
 
+# use rarefied table if rarefying data
+
 qiime taxa filter-seqs \
   --i-sequences rep-seqs.qza \
   --i-taxonomy taxonomy.qza \
