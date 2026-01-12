@@ -11,6 +11,7 @@ qiime dada2 denoise-paired \
   --o-table table.qza \
   --o-representative-sequences unfiltered_rep-seqs.qza \
   --o-denoising-stats denoising-stats.qza \
+  --o-base-transition-stats base-transition-stats.qza \
   --p-n-threads 4 \
   --p-max-ee-f 2 \
   --p-max-ee-r 2
