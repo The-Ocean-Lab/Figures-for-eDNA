@@ -11,7 +11,7 @@ qiime taxa filter-seqs \
 # the new filtered-rep-seqs file will be used to do the same thing as 4.0 Assigning Taxonomy
 
 qiime feature-classifier classify-sklearn \
-  --i-classifier classifier.qza \
+  --i-classifier classifier \
   --i-reads filt-rep-seqs.qza \
   --p-n-jobs 4 \
   --o-classification filt-taxonomy.qza
