@@ -3,10 +3,11 @@
 qiime taxa filter-seqs \
   --i-sequences rep-seqs.qza \
   --i-taxonomy taxonomy.qza \
-  --p-exclude "d__Bacteria,p__Arthropoda" \
+  --p-exclude "d__Bacteria,p__Arthropoda,d__Eukaryota;" \
   --o-filtered-sequences filt-rep-seqs.qza
 # two examples are provided, use bar plot to understand what you want to filter and copy straight from qiime2 bar plot
-# --p-exclude "x,y,z" or --p-include "x,y,z" can be used to filter 
+# --p-exclude "x,y,z" or --p-include "x,y,z" can be used to filter
+# d__Eukaryota; allows you to exclude any Eukaryota without a phylum classification
 # the new filtered-rep-seqs file will be used to do the same thing as 4.0 Assigning Taxonomy
 
 qiime feature-classifier classify-sklearn \
