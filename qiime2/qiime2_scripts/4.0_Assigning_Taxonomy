@@ -4,6 +4,9 @@ Based on Wright Labs workshop 05/12/2025 and 05/13/2025
 
 4.0 Assigning Taxonomy
 
+classifier ="classifier_pathname"
+# then you can just use "classifier" for all the commands 
+
 qiime feature-classifier classify-sklearn \
   --i-classifier classifier.qza \
   --i-reads rep-seqs.qza \
