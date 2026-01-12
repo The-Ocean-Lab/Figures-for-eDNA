@@ -37,5 +37,5 @@ qiime taxa barplot \
 # whenever you see rep-seq, taxonomy, or table as inputs use filtered instead
 
 mkdir -p tax_intermediate_files
-mv table.qza taxonomy.qza VIEWABLE_rep-seqs.qzv VIEWABLE_table.qzv VIEWABLE_taxa-bar-plots.qzv VIEWABLE_taxonomy.qzv tax_intermediate_files
+mv table.qza rep-seqs.qza taxonomy.qza VIEWABLE_rep-seqs.qzv VIEWABLE_table.qzv VIEWABLE_taxa-bar-plots.qzv VIEWABLE_taxonomy.qzv tax_intermediate_files
 # moves all the unfiltered files to a folder
