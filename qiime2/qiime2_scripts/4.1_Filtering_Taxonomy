@@ -27,6 +27,11 @@ qiime taxa filter-table \
   --o-filtered-table filt-table
 # the taxonomy and table files should be filtered in the same way
 
+qiime taxa barplot \
+  --i-table filt-table.qza \
+  --i-taxonomy filt-taxonomy.qza \
+  --o-visualization VIEWABLE_filt-taxa-bar-plots.qzv
+
 
 # use these files filt-rep-seqs, filt-taxonomy, filt-table for all downstream analysis 
 # whenever you see rep-seq, taxonomy, or table as inputs use filtered instead
