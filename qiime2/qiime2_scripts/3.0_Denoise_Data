@@ -9,7 +9,7 @@ qiime dada2 denoise-paired \
   --p-trunc-len-f # \
   --p-trunc-len-r # \
   --o-table table.qza \
-  --o-representative-sequences unfiltered_rep-seqs.qza \
+  --o-representative-sequences rep-seqs.qza \
   --o-denoising-stats denoising-stats.qza \
   --o-base-transition-stats base-transition-stats.qza \
   --p-n-threads 4 \
