@@ -1,47 +1,42 @@
 Training a Classifier - 18S SILVA
 
 # based on qiime2 forum instructions
-
-qiime tools import \
-  --type 'FeatureData[Sequence]' \
-  --input-path /Users/drocean/Desktop/16S_18S_silva/SILVA_138.2_SSURef_NR99_tax_silva_trunc.fasta \
-  --output-path silva-138-ssu-ref-seqs-rna.qza
-                                                   # takes a database in fasta file form and turns it into a .qza so qiime2 can read it
-workdir="/Users/drocean/Desktop/classifer"        # change the working directory to a new folder called classifier
-cd $workdir
-conda install -c bioconda -c conda-forge q2-rescript  
-                                                   # install tools to help change the database from rna.qza to dna.qza
-qiime rescript reverse-transcribe \
-  --i-rna-sequences silva-138-ssu-ref-seqs-rna.qza \
-  --o-dna-sequences silva-138-ssu-ref-seqs-dna.qza
-                                                   # rna.qza to dna.qza
+                                                  
 qiime rescript get-silva-data \
   --p-version 138 \
   --p-target SSURef_NR99 \
   --p-include-species-labels \
   --o-silva-sequences silva-138-ssu-nr99-seqs.qza \
   --o-silva-taxonomy silva-138-ssu-nr99-tax.qza
-                                                  # uses database to create a .qza file with the taxonomy seq and the taxonomy name
+                                                  # grabs the database from silva to create a .qza file with the taxonomy seq and the taxonomy name
+qiime rescript reverse-transcribe \
+  --i-rna-sequences silva-138-ssu-nr99-seqs.qza \
+  --o-dna-sequences silva-138-ssu-ref-seqs-dna.qza # when you download the -seqs file it's RNA seqs but you need DNA so this command changes to DNA 
+
 qiime rescript dereplicate \
   --i-sequences silva-138-ssu-ref-seqs-dna.qza \
   --i-taxa silva-138-ssu-nr99-tax.qza \
   --p-mode 'uniq' \
-  --o-dereplicated-sequences silva-138.0-ssu-nr99-seqs-derep-uniq.qza \
+  --o-dereplicated-sequences silva-138-ssu-nr99-seqs-derep-uniq.qza \
   --o-dereplicated-taxa silva-138.0-ssu-nr99-tax-derep-uniq.qza
                                                  # gets rid of duplicate seqs
 qiime feature-classifier extract-reads \
-    --i-sequences silva-138.0-ssu-nr99-seqs-derep-uniq.qza \
+    --i-sequences silva-138-ssu-nr99-seqs-derep-uniq.qza \
     --p-f-primer GTACACACCGCCCGTC \
     --p-r-primer TGATCCTTCTGCAGGTTCACCTAC \
     --p-n-jobs 8 \
     --p-read-orientation 'forward' \
-    --o-reads silva-132.0-ssu-nr99-seqs-F04-R22.qza
-                                                # XXXX
+    --o-reads silva-138-ssu-nr99-seqs-F04-R22.qza
+                                                # extracting the section of the database we want based on the primers
 qiime feature-classifier fit-classifier-naive-bayes \
-  --i-reference-reads silva-132.0-ssu-nr99-seqs-F04-R22.qza \
-  --i-reference-taxonomy silva-138.0-ssu-nr99-tax-derep-uniq.qza \
+  --i-reference-reads silva-138-ssu-nr99-seqs-F04-R22.qza \
+  --i-reference-taxonomy silva-138-ssu-nr99-tax-derep-uniq.qza \
   --o-classifier silva-138-F04-R22-classifier.qza
                                                 # training the classifer
+
+mkdir -p classifier_intermediate_files
+mv  tax_intermediate_files
+# moves all the unfiltered files to a folder
 
 
 EURKAYOME 18S Database
