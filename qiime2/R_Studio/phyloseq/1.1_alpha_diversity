@@ -8,5 +8,5 @@ library(dplyr)
 plot_richness(physeq)
 # plots observed, chao1, ACE, shannon, Simpson, InvSimpson, Fisher
 
-plot_richness(physeq, measures=c("Simpson", "Shannon")) 
-# only does simpson and shannon, can be adjusted to any indice listed above
+plot_richness(physeq, measures=c("Simpson", "Shannon", "Observed")) 
+# only does simpson, observed shannon, can be adjusted to any indice listed above
