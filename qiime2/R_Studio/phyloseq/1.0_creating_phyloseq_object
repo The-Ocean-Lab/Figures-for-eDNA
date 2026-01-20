@@ -2,17 +2,10 @@
 
 # files needed from qiime2 are table.qza, taxonomy,qza, rooted-tree.qza, and the metadata.tsv file in those specific formats
 
-library(qiime2R)
+library(qiime2R) 
+library(ggplot2)
 library(phyloseq)
+library(dplyr)
 
 physeq<-qza_to_phyloseq(features="table.qza", tree="rooted-tree.qza", taxonomy="taxonomy.qza", metadata = "metadata.tsv")
 # in the "" should be the pathnname to the file on your computer 
-
-merged_physeq <- merge_samples(physeq, "Replicate")
-# merges replicates by summing the abundances then averaging them across replicate or any metadata column you choose 
-
-SD <- merge_samples(sample_data(physeq), "Replicate")
-print(SD[, "Replicate"]) # check the correct number of samples
-print(merged_physeq) # make sure all the data is correct and present, # samples, # sample variable = columns in metadata
-
-
