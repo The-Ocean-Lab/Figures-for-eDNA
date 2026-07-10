@@ -1,4 +1,4 @@
-# the goal of the script is to get login on the HPC and install qiimw
+# the goal of the script is to get login on the HPC and install qiime
 
 USERNAME@XXX.XXX.XX.XX # in your computer terminal run with the specific username and HPC code given my admin
 
