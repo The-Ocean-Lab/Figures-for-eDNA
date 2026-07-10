@@ -8,7 +8,7 @@ USERNAME@XXX.XXX.XX.XX # in your computer terminal run with the specific usernam
 # enter a new password 
 # re-enter the new password
 
-# go to the jupyter.cas website for the HPC
+# go to the jupyter.cas website for the HPC and select "terminal"
 
 mkdir -p /data/common/${USER}/.conda
 
