@@ -1,0 +1,37 @@
+# the goal of the script is to get login on the HPC and install qiimw
+
+USERNAME@XXX.XXX.XX.XX # in your computer terminal run with the specific username and HPC code given my admin
+
+# paste the password and hit enter
+# you will not be able to see it 
+
+# enter a new password 
+# re-enter the new password
+
+# go to the jupyter.cas website for the HPC
+
+mkdir -p /data/common/${USER}/.conda
+
+ln -s /data/common/${USER}/.conda ~/.conda
+
+cat <<'EOT' >> .condarc
+pkgs_dirs:
+    - /data/common/${USER}/.conda/pkgs
+EOT
+
+# run those three difference chunks of code replacing ${USER} with username (eg /angela.davis/)
+
+source /data/common/software/install/miniconda3/etc/profile.d/conda.sh
+conda --version # check to make sure conda is installed 
+uname -a # returns what type of computer the HPC is to see which qiime2 installation to use 
+
+conda env create \
+  --name rachis-qiime2-2026.4 \
+  --file https://raw.githubusercontent.com/qiime2/distributions/refs/heads/dev/2026.4/qiime2/released/rachis-qiime2-linux-64-conda.yml
+
+# it will take awhile for qiime2 to install
+
+source ~/.bashrc # opens conda should say base now before the username
+
+conda activate rachis-qiime2-2026.4 # open the qiime2 environment 
+
